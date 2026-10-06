@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StorageDefender — Execution Summary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#F4F5F7;
+    --surface:#FFFFFF;
+    --ink:#1B2430;
+    --ink-soft:#5B6472;
+    --line:#E3E6EA;
+    --steel:#2E5A82;
+    --steel-dim:#E7EEF4;
+    --gold:#B9862F;
+    --gold-dim:#F6EEE0;
+    --good:#3E7F5C;
+    --good-dim:#E5F0EA;
+    --bad:#B3503F;
+    --bad-dim:#F5E7E3;
+    --radius:10px;
+  }
+  :root:not([data-theme="light"]){
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14181F;
+      --surface:#1B212B;
+      --ink:#E8EAEE;
+      --ink-soft:#9AA3B0;
+      --line:#2A313D;
+      --steel:#7FAAD0;
+      --steel-dim:#1F2E3B;
+      --gold:#D8B471;
+      --gold-dim:#2E2A1D;
+      --good:#7BBE9C;
+      --good-dim:#1C2C23;
+      --bad:#E08C7A;
+      --bad-dim:#2E211E;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14181F;
+    --surface:#1B212B;
+    --ink:#E8EAEE;
+    --ink-soft:#9AA3B0;
+    --line:#2A313D;
+    --steel:#7FAAD0;
+    --steel-dim:#1F2E3B;
+    --gold:#D8B471;
+    --gold-dim:#2E2A1D;
+    --good:#7BBE9C;
+    --good-dim:#1C2C23;
+    --bad:#E08C7A;
+    --bad-dim:#2E211E;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 80px;}
+
+  header.page{
+    border-bottom:1px solid var(--line);
+    padding-bottom:28px;
+    margin-bottom:28px;
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--steel);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  h1{
+    font-family:'Newsreader',Georgia,serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,38px);
+    line-height:1.15;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .sub{
+    color:var(--ink-soft);
+    font-size:15px;
+    max-width:640px;
+    line-height:1.55;
+  }
+
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-top:24px;
+  }
+  .kpi{background:var(--surface);padding:18px 20px;}
+  .kpi .num{font-family:'Newsreader',serif;font-size:28px;font-weight:600;}
+  .kpi .lbl{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+
+  nav.tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:24px;
+    border-bottom:1px solid var(--line);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    appearance:none;border:none;background:none;
+    font-family:inherit;font-size:14.5px;font-weight:500;
+    color:var(--ink-soft);
+    padding:11px 16px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--steel);font-weight:600;}
+  nav.tabs button:focus-visible{outline:2px solid var(--steel);outline-offset:-2px;}
+
+  .qfilter{
+    display:flex;align-items:center;gap:8px;
+    margin:-10px 0 22px;
+    flex-wrap:wrap;
+  }
+  .qfilter-label{font-size:13px;color:var(--ink-soft);margin-right:2px;}
+  .qfilter button{
+    appearance:none;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink-soft);font-family:inherit;font-size:13px;font-weight:500;
+    padding:6px 13px;border-radius:99px;cursor:pointer;
+  }
+  .qfilter button.active{background:var(--steel-dim);border-color:var(--steel);color:var(--steel);font-weight:600;}
+  .qfilter button:focus-visible{outline:2px solid var(--steel);outline-offset:1px;}
+
+  section.panel{display:none;}
+  section.panel.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+    margin-bottom:20px;
+  }
+  .card h2{
+    font-family:'Newsreader',serif;
+    font-weight:600;
+    font-size:19px;
+    margin:0 0 4px;
+  }
+  .card .note{font-size:13px;color:var(--ink-soft);margin-bottom:16px;line-height:1.5;}
+  .chart-box{position:relative;height:300px;}
+  .chart-box.tall{height:340px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{color:var(--ink-soft);font-weight:600;font-size:12.5px;}
+  td.num-cell,th.num-cell{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  .key{color:var(--steel);font-weight:600;white-space:nowrap;}
+  a.key{text-decoration:none;}
+  a.key:hover{text-decoration:underline;}
+  a.key:visited{color:var(--steel);}
+
+  .status-pill{
+    display:inline-block;padding:2px 8px;border-radius:99px;
+    font-size:11.5px;font-weight:600;white-space:nowrap;
+  }
+  .st-done{background:var(--good-dim);color:var(--good);}
+  .st-progress{background:var(--gold-dim);color:var(--gold);}
+  .st-todo{background:var(--line);color:var(--ink-soft);}
+
+  details.person{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:12px;
+    background:var(--surface);
+  }
+  details.person summary{
+    list-style:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;
+  }
+  details.person summary::-webkit-details-marker{display:none;}
+  .person-name{font-weight:600;font-size:15px;}
+  .person-meta{font-size:13px;color:var(--ink-soft);}
+  .chev{transition:transform .2s ease;color:var(--ink-soft);}
+  details[open] .chev{transform:rotate(90deg);}
+  .person-body{padding:0 18px 16px;}
+
+  .callout{
+    background:var(--steel-dim);
+    border-left:3px solid var(--steel);
+    border-radius:0 8px 8px 0;
+    padding:12px 16px;
+    font-size:13.5px;
+    color:var(--ink);
+    line-height:1.55;
+    margin-top:4px;
+  }
+
+  footer{
+    margin-top:32px;padding-top:18px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--ink-soft);
+  }
+
+  @media (max-width:560px){
+    .wrap{padding:28px 16px 60px;}
+    th,td{padding:8px 6px;font-size:12.5px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div class="eyebrow">StorageDefender — SD Board</div>
+    <h1>Execution Summary, YTD 2026</h1>
+    <p class="sub">Developer and QA output, time logged against roadmap features, and release timing — built from the 65 SD-board items carrying a 2026 roadmap quarter tag (Q1–Q3), plus their full subtask/child-card tree, rolled up to the true parent Epic. Dev Resource entries for Nagur and Prashanth Sai are excluded — they're no longer on the team. Sundhar Hari is excluded from the Developer report too; his time is tracked separately in the Kanban cards tab.</p>
+    <div class="kpis" id="kpiRow"></div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-panel="dev" class="active">Developer report</button>
+    <button data-panel="quarter">Feature × Quarter</button>
+    <button data-panel="kanban">Kanban cards</button>
+    <button data-panel="pm">Associated PM</button>
+  </nav>
+
+  <div class="qfilter" id="qfilter">
+    <span class="qfilter-label">Quarter:</span>
+    <button data-q="all" class="active">All quarters</button>
+    <button data-q="Q1(Jan-Mar)">Q1 · Jan–Mar</button>
+    <button data-q="Q2(Apr-Jun)">Q2 · Apr–Jun</button>
+    <button data-q="Q3(Jul-Sep)">Q3 · Jul–Sep</button>
+  </div>
+
+  <section class="panel active" id="panel-dev">
+    <div class="card">
+      <h2>Hours logged by developer</h2>
+      <p class="note">Hours actually logged in Jira by each developer (Richard, Pavan Sandeep Natha, ganesh), rolled up to the epic or feature level — subtask and child-card detail is consolidated into one line per feature rather than listed individually. A card that is itself roadmap-tagged AND a child of another roadmap-tagged card is only counted once, under its own epic. Click a bar to jump to that developer's list; use the quarter filter above to see the split by roadmap quarter.</p>
+      <div class="chart-box"><canvas id="devChart"></canvas></div>
+    </div>
+    <div id="devList"></div>
+  </section>
+
+  <section class="panel" id="panel-quarter">
+    <div class="card">
+      <h2>Development vs QA time by roadmap quarter</h2>
+      <p class="note">Actual Jira worklog hours per quarter, split by role: development time (Richard, Pavan Sandeep Natha, ganesh) and QA time (Ram Kumar, sanjeev, Anna Lyamina). Includes hours logged directly on roadmap-tagged cards and on their subtasks/child cards.</p>
+      <div class="chart-box tall"><canvas id="quarterChart"></canvas></div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Quarter</th><th class="num-cell">Dev hours</th><th class="num-cell">QA hours</th><th class="num-cell">Total hours</th></tr></thead>
+        <tbody id="quarterTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-kanban">
+    <div class="card">
+      <h2>Developer time on SDKANBAN board cards</h2>
+      <p class="note">Time developers logged on SDKANBAN board cards rather than SD roadmap epics — this work doesn't show up in the Developer report. Quarter is based on each card's resolution date (or creation date if still open); 2025-dated cards are excluded from the totals below. Sundhar Hari's work is almost entirely here, which is why he's excluded from the Developer report entirely.</p>
+      <div class="chart-box"><canvas id="kanbanSummaryChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div id="kanbanPersonTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+      <div class="chart-box"><canvas id="kanbanChart"></canvas></div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Quarter</th><th class="num-cell">Cards</th><th class="num-cell">Hours</th></tr></thead>
+        <tbody id="kanbanQuarterTable"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2 style="font-size:16px;margin-bottom:10px;">All cards (sorted by hours)</h2>
+      <table>
+        <thead><tr><th>Card</th><th>Summary</th><th>Status</th><th>Quarter</th><th class="num-cell">Hours</th></tr></thead>
+        <tbody id="kanbanCardTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-pm">
+    <div class="card">
+      <h2>Hours by Associated PM</h2>
+      <p class="note">Total time logged (dev + QA combined) per feature, grouped by the Associate PM field on the SD board. "Unassigned" covers parent epics that sit above the roadmap-tagged cards and haven't had an Associate PM set directly. "# of Facilities/Orgs" is pulled from BigQuery per feature (feature toggles, PMS type, or usage signals depending on the feature) and excludes internal, test, staging, and demo facilities. "N/A" means the feature has no facility-level concept (e.g. an internal automation task); "—" means the mapping hasn't been provided yet.</p>
+      <div class="chart-box"><canvas id="pmChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Feature Value Breakdown</h2>
+      <p class="note">Value score = facilities/orgs using the feature ÷ (hours spent building it × days it's been live in production, per Confluence release notes). This rewards features reaching facilities quickly relative to both effort AND time — a feature live 2 weeks with strong adoption outranks one live 6 months with weak adoption. Each feature's % share is that score as a portion of the total across all measured features, bucketed as Low (&lt;3%) / Medium (3–10%) / High (10–20%) / Extensive (≥20%). Still not a dollar ROI — no revenue or cost figures involved. Donut shows only Medium/High/Extensive features, re-normalized to 100%.</p>
+      <div class="chart-box"><canvas id="valueChart"></canvas></div>
+    </div>
+    <div id="pmList"></div>
+  </section>
+
+  <footer>Source: Jira SD board, cards with SDRoadMap2026 set, and SDKANBAN board cards for Sundhar Hari · refreshed Sep 21, 2026 (latest pull). "Hours" reflect logged Time Spent, not original estimates. Jira fields (roadmap tags, dev/QA resources, worklogs) can change after this pull — re-check individual cards if something looks off.</footer>
+</div>
+
+<script>
+const DATA = {"dev_report":{"Richard":{"epics":[{"key":"SD-1860","summary":"Automation Shipment Tracking V1.0","type":"Epic","hours":89.58,"items":18,"quarter":"Q1(Jan-Mar)"},{"key":"SD-1871","summary":"Incident & Task Management Enhancements","type":"Epic","hours":32.5,"items":8,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2198","summary":"Cubby Integration","type":"Epic","hours":80.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2002","summary":"SD Smart Unit Pro Features","type":"Epic","hours":32.0,"items":7,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2111","summary":"Pre-Install Devices for Vacant Smart Units","type":"Epic","hours":87.0,"items":2,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2199","summary":"SD \"Claude Code\" Integration & Usage","type":"Epic","hours":80.0,"items":1,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2213","summary":"Pre-Installed Method C - Updated UI and flow","type":"Story","hours":40.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2225","summary":"Smart Unit Matching: Substring match for Unit Amenity + Multi-select Recurring Charges across all PMS solutions","type":"Task","hours":16.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2282","summary":"Auto Enrollment Mode (RevMax)","type":"Epic","hours":168.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2130","summary":"Smart Unit To Zone Mapping","type":"Epic","hours":136.0,"items":3,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2367","summary":"Subscription Start Date vs Move-in Date Mismatch","type":"Task","hours":104.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2388","summary":"CC Storage Integrations with SD","type":"Story","hours":112.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2454","summary":"Quikstor -> Integration Partner","type":"Task","hours":93.0,"items":2,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2497","summary":"Mass Marketing Automation -SW Task","type":"Epic","hours":24.0,"items":1,"quarter":"Q3(Jul-Sep)"}],"total_hours":1094.08},"ganesh":{"epics":[{"key":"SD-1871","summary":"Incident & Task Management Enhancements","type":"Epic","hours":173.0,"items":26,"quarter":"Q1(Jan-Mar)"},{"key":"SD-1860","summary":"Automation Shipment Tracking V1.0","type":"Epic","hours":44.0,"items":12,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2112","summary":"Demo Smart Units on fly V1.0","type":"Epic","hours":4.0,"items":3,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2135","summary":"After completing incident survey page is not refreshing automatically and Time zone issue on calendar.","type":"Bug","hours":7.0,"items":1,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2111","summary":"Pre-Install Devices for Vacant Smart Units","type":"Epic","hours":20.0,"items":6,"quarter":"Q1(Jan-Mar)"}],"total_hours":248.0},"Pavan Sandeep Natha":{"epics":[{"key":"SD-2153","summary":"Monument Integration (Technical fixes)","type":"Epic","hours":147.08,"items":22,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2207","summary":"Source of Move-in Chart","type":"Epic","hours":88.0,"items":11,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2223","summary":"SiteLink — Auto Credit Reconciliation Charge Toggle","type":"Story","hours":20.0,"items":3,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2226","summary":"Sitelink integration is not putting the device note","type":"Task","hours":20.0,"items":2,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2270","summary":"Substring matching for unit type is case-sensitive and requires full string match","type":"Bug","hours":24.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2278","summary":"SSM: Tier-Based Pricing (Pricing Category Parity with StorEdge)","type":"Story","hours":40.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2313","summary":"Missing Device Tile — Regional Inventory Summary must match Facility Dashboard count","type":"Story","hours":40.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2338","summary":"WSS integration","type":"Epic","hours":80.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2362","summary":"Inventory Improvements","type":"Epic","hours":4.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2370","summary":"Display month-specific Actual Charge amount on SD Tenant Ledger report for SiteLink accounts","type":"Task","hours":48.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2371","summary":"Automate Daily Premium Vacant Unit Report — Phase 1 (Sitelink)","type":"Story","hours":56.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2422","summary":"SAM Report Request due to Invoicing","type":"Task","hours":48.0,"items":2,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2424","summary":"SiteLink — First-Month Charge Amount Toggle","type":"Story","hours":32.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2447","summary":"SiteLink Daily Sweep — Post-Move-In Eligibility & Recurring Charge Reconciliation","type":"Story","hours":80.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-1857","summary":"Monument Integration","type":"Epic","hours":253.58,"items":32,"quarter":"Q1(Jan-Mar)"}],"total_hours":980.66}},"qa_report":{"sanjeev":{"epics":[{"key":"SD-1871","summary":"Incident & Task Management Enhancements","type":"Epic","hours":135.35,"items":17,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2198","summary":"Cubby Integration","type":"Epic","hours":64.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2002","summary":"SD Smart Unit Pro Features","type":"Epic","hours":24.0,"items":2,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2111","summary":"Pre-Install Devices for Vacant Smart Units","type":"Epic","hours":64.0,"items":1,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2207","summary":"Source of Move-in Chart","type":"Epic","hours":24.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2213","summary":"Pre-Installed Method C - Updated UI and flow","type":"Story","hours":40.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-1860","summary":"Automation Shipment Tracking V1.0","type":"Epic","hours":8.0,"items":1,"quarter":"Q1(Jan-Mar)"}],"total_hours":359.35},"Ram Kumar":{"epics":[{"key":"SD-1857","summary":"Monument Integration","type":"Epic","hours":96.0,"items":5,"quarter":"Q1(Jan-Mar)"},{"key":"SD-1931","summary":"VV+ Incidents","type":"Epic","hours":48.0,"items":3,"quarter":"Q1(Jan-Mar)"},{"key":"SD-1860","summary":"Automation Shipment Tracking V1.0","type":"Epic","hours":78.2,"items":11,"quarter":"Q1(Jan-Mar)"},{"key":"SD-1871","summary":"Incident & Task Management Enhancements","type":"Epic","hours":21.42,"items":5,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2198","summary":"Cubby Integration","type":"Epic","hours":32.14,"items":6,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2112","summary":"Demo Smart Units on fly V1.0","type":"Epic","hours":15.0,"items":5,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2153","summary":"Monument Integration (Technical fixes)","type":"Epic","hours":80.0,"items":4,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2111","summary":"Pre-Install Devices for Vacant Smart Units","type":"Epic","hours":3.0,"items":1,"quarter":"Q1(Jan-Mar)"},{"key":"SD-2207","summary":"Source of Move-in Chart","type":"Epic","hours":16.0,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2223","summary":"SiteLink — Auto Credit Reconciliation Charge Toggle","type":"Story","hours":28.0,"items":2,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2226","summary":"Sitelink integration is not putting the device note","type":"Task","hours":9.0,"items":2,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2270","summary":"Substring matching for unit type is case-sensitive and requires full string match","type":"Bug","hours":40.0,"items":2,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2278","summary":"SSM: Tier-Based Pricing (Pricing Category Parity with StorEdge)","type":"Story","hours":2.25,"items":1,"quarter":"Q2(Apr-Jun)"},{"key":"SD-2338","summary":"WSS integration","type":"Epic","hours":72.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2367","summary":"Subscription Start Date vs Move-in Date Mismatch","type":"Task","hours":65.0,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2422","summary":"SAM Report Request due to Invoicing","type":"Task","hours":6.68,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2424","summary":"SiteLink — First-Month Charge Amount Toggle","type":"Story","hours":69.55,"items":1,"quarter":"Q3(Jul-Sep)"},{"key":"SD-2130","summary":"Smart Unit To Zone Mapping","type":"Epic","hours":6.0,"items":1,"quarter":"Q3(Jul-Sep)"}],"total_hours":688.24},"Anna Lyamina":{"epics":[{"key":"SD-1871","summary":"Incident & Task Management Enhancements","type":"Epic","hours":10.0,"items":1,"quarter":"Q1(Jan-Mar)"}],"total_hours":10.0}},"quarter_dev_hours":{"Q1(Jan-Mar)":774.74,"Q2(Apr-Jun)":735.0,"Q3(Jul-Sep)":813.0},"quarter_qa_hours":{"Q1(Jan-Mar)":534.97,"Q2(Apr-Jun)":303.39,"Q3(Jul-Sep)":219.23},"quarter_time":{"Q1(Jan-Mar)":1309.71,"Q2(Apr-Jun)":1038.39,"Q3(Jul-Sep)":1032.23},"quarter_count":{"Q1(Jan-Mar)":29,"Q2(Apr-Jun)":23,"Q3(Jul-Sep)":13},"relperf_by_q":{"Q1(Jan-Mar)":{"On Time":19,"Delayed":0,"Not Set":10},"Q2(Apr-Jun)":{"On Time":14,"Delayed":1,"Not Set":8},"Q3(Jul-Sep)":{"On Time":12,"Delayed":0,"Not Set":1}},"quarter_order":["Q1(Jan-Mar)","Q2(Apr-Jun)","Q3(Jul-Sep)"],"pm_report":{"MJ":{"features":[{"key":"SD-1860","summary":"Automation Shipment Tracking V1.0","type":"Epic","quarter":"Q1(Jan-Mar)","hours":219.78,"facility_count":"unknown","facility_list":[]},{"key":"SD-1871","summary":"Incident & Task Management Enhancements","type":"Epic","quarter":"Q1(Jan-Mar)","hours":372.27,"facility_count":27,"facility_list":["Advantage Storage","Affordable Family Storage","Alamo Southwest Managment ","Anytime Storage","Attic Management Group","Bomarc Commercial Properties","Columbia Management Group","Community First Properties 8 LLC","Cubix Asset Management","Easy Stop Storage","Larry Calvert / Bell Avenue","My Garage Self Storage LLC","My Storage Group","Packed Planet Self Storage Management","Right Move Storage","SKS Management","SecureSpace Self Storage","South Plaza Storage LLC","Spacebox Storage","Storage Asset Management","The Jenkins Organization","Tower Storage of Shreveport","Volta Global","West Coast Self Storage","Westport Properties","Westrup Storage Solutions","Winter Properties Partnership LLP"],"release_date":"2025-12-30","days_live":280,"value_pct":0.1,"value_label":"Low"},{"key":"SD-2198","summary":"Cubby Integration","type":"Epic","quarter":"Q2(Apr-Jun)","hours":176.14,"facility_count":29,"facility_list":[" TNC Self Storage - Souderton","222 Self Storage ","Affordable Family Storage - Cedar Rapids","Affordable Family Storage - Council Bluffs","Affordable Family Storage - East 33rd","Affordable Family Storage - Fort St","Affordable Family Storage - Lafayette","Affordable Family Storage - MLK","Affordable Family Storage - Meridian","Affordable Family Storage - Omaha L St","Affordable Family Storage - Peoria","Affordable Family Storage - Springfield","Affordable Family Storage - Urbandale","Affordable Family Storage - Wichita","Affordable Family Storage of Sugar Land","All Aboard Storage - Ormond Depot","Discount Mini Storage","Flying Hills Storage","Greater Danville Storage","Jackson Self Storage","North Reading Storage","Route 625 Storage","Sanctum Storage Abilene","Secure Storage and RV","Spacebox Hattiesburg","Stallion Storage-Lake Jackson","Temple Star Storage","Valley Best Storage","Victoria U-Lock Mini Storage (West Shore)"],"release_date":"2026-04-28","days_live":161,"value_pct":0.4,"value_label":"Low"},{"key":"SD-2002","summary":"SD Smart Unit Pro Features","type":"Epic","quarter":"Q1(Jan-Mar)","hours":56.0,"facility_count":9,"facility_list":["A+ Storage - Huntsville","MJ Self Storage","Point Richmond Self Storage","Prime Storage - Tarrytown","StorTropolis - Olathe","StorTropolis Self Storage - Blue Springs","StorTropolis Self Storage - Brighton","StorTropolis Self Storage - Lenexa","Three by Three Storage"],"release_date":"2026-02-19","days_live":229,"value_pct":0.2,"value_label":"Low"},{"key":"SD-2111","summary":"Pre-Install Devices for Vacant Smart Units","type":"Epic","quarter":"Q1(Jan-Mar)","hours":174.0,"facility_count":3,"facility_list":["MJ Self Storage","Point Richmond Self Storage","Three by Three Storage"],"release_date":"2026-03-31","days_live":189,"value_pct":0.0,"value_label":"Low"},{"key":"SD-2213","summary":"Pre-Installed Method C - Updated UI and flow","type":"Story","quarter":"Q2(Apr-Jun)","hours":80.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2282","summary":"Auto Enrollment Mode (RevMax)","type":"Epic","quarter":"Q2(Apr-Jun)","hours":168.0,"facility_count":39,"facility_list":["AAAA Self Storage- LO","Affordable Storage of Bartow","Affordable Storage of Thomasville","Affordable Storage of Waynesboro","Augusta Self Storage","Clean & Tidy Storage","Eagles Landing Storage Brannen St","Eagles Landing Storage Ed Moore Ct","Eagles Landing Storage S. Main St","Eagles Landing Storage Zetterower","Family Heirloom Storage - Crawford","Family Heirloom Storage - Hwy 58","Family Heirloom Storage - Pinnacle","Family Heirloom Storage Ludowici","Family Heirloom Storage of Albany","Family Heirloom Storage of Bamberg","Family Heirloom Storage of Birmingham","Family Heirloom Storage of Chester 1840 JA","Family Heirloom Storage of Chester 961 JA","Family Heirloom Storage of Douglasville","Family Heirloom Storage of Guntown","Family Heirloom Storage of Kings Mountain Woodland","Family Heirloom Storage of Kings Mountain York","Family Heirloom Storage of Statesboro","Family Heirloom storage of Baldwyn","Family Heirloom storage of Forest City","Family Heriloom Storage of Mooreville","Family heirloom Storage of Tupelo- 107 industrial","Family heirloom storage of Tupelo-Washington ave","Fayetteville Affordable Storage","Hawthorne Self Storage","Southeastern Self Storage - Lake Waccamaw","Southeastern Self Storage - Madison St","Southeastern Self Storage - Main St","Southeastern Self Storage - Mill Pond","Southeastern Self Storage - Pecan St","Southeastern Self Storage - Tabor City","Southeastern Self Storage - Walter St","Stallion Storage-Lake Jackson"],"release_date":"2026-05-28","days_live":131,"value_pct":0.6,"value_label":"Low"},{"key":"SD-2367","summary":"Subscription Start Date vs Move-in Date Mismatch","type":"Task","quarter":"Q3(Jul-Sep)","hours":169.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2388","summary":"CC Storage Integrations with SD","type":"Story","quarter":"Q3(Jul-Sep)","hours":112.0,"facility_count":37,"facility_list":["Affordable Storage of Bartow","Affordable Storage of Thomasville","Affordable Storage of Waynesboro","Augusta Self Storage","Clean & Tidy Storage","Eagles Landing Storage Brannen St","Eagles Landing Storage Ed Moore Ct","Eagles Landing Storage S. Main St","Eagles Landing Storage Zetterower","Family Heirloom Storage - Crawford","Family Heirloom Storage - Hwy 58","Family Heirloom Storage - Pinnacle","Family Heirloom Storage Ludowici","Family Heirloom Storage of Albany","Family Heirloom Storage of Bamberg","Family Heirloom Storage of Birmingham","Family Heirloom Storage of Chester 1840 JA","Family Heirloom Storage of Chester 961 JA","Family Heirloom Storage of Douglasville","Family Heirloom Storage of Guntown","Family Heirloom Storage of Kings Mountain Woodland","Family Heirloom Storage of Kings Mountain York","Family Heirloom Storage of Statesboro","Family Heirloom storage of Baldwyn","Family Heirloom storage of Forest City","Family Heriloom Storage of Mooreville","Family heirloom Storage of Tupelo- 107 industrial","Family heirloom storage of Tupelo-Washington ave","Fayetteville Affordable Storage","Hawthorne Self Storage","Southeastern Self Storage - Lake Waccamaw","Southeastern Self Storage - Madison St","Southeastern Self Storage - Main St","Southeastern Self Storage - Mill Pond","Southeastern Self Storage - Pecan St","Southeastern Self Storage - Tabor City","Southeastern Self Storage - Walter St"],"release_date":"2026-08-31","days_live":36,"value_pct":3.2,"value_label":"Medium"},{"key":"SD-2454","summary":"Quikstor -> Integration Partner","type":"Task","quarter":"Q3(Jul-Sep)","hours":93.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2112","summary":"Demo Smart Units on fly V1.0","type":"Epic","quarter":"Q1(Jan-Mar)","hours":19.0,"facility_count":86,"facility_list":["4 Storage - Montgomeryville","Affordable Family Storage - Urbandale","Area Storage - South Plaza","Available Self Storage","Bomarc Self Storage - Newburgh","Columbia Self Storage - Ellenville","Columbia Self Storage – Anchor","Discount Storage on Bataan","Fairless Hills Self Storage","Garden Self Storage","Glacier West Gig Harbor","Greer Storage LLC- SCG","Keep Safe Storage","Lock & Roll Storage – Forest","MJ Self Storage","Midland Self Storage","My Garage 45th and 7th","Ocean Storage - Nansemond Parkway","Prime Storage - Bourne","Prime Storage - Clinton Bellefonte Pl","Prime Storage - Conyers","Prime Storage - Greenville Haywood Rd.","Prime Storage - Manchester Eddy Rd.","Prime Storage - Summerville","Prime Storage - Wilmington","Princeton Self Storage","ProSafe Storage - Kilmarnock","Rent-A-Space - Salem","Right Move - Lakeport Self Storage","Right Move Storage Ft. Worth NW","Ryder’s RV & Self Storage","Safe Place Storage","SecureSpace Self Storage Long Beach Orange","SecureSpace Self Storage San Jose Teresa","SecureSpace Self Storage Vista San Diego","Sound Storage Of Mill Creek","Sound Storage of Lynnwood","Spacebox Storage - Nail Rd","Spacebox Storage - Olive Branch","StorCo Storage - Wood River","StorQuest Dallas/Shady Trail","StorTropolis - Olathe","StorTropolis Self Storage - Brighton","StorTropolis Self Storage - Tiffany Springs","Storage Sense - 2282 East Bert Kouns Industrial Loop","Storage Sense - Apopka","Storage Sense - Augusta - Wheeler","Storage Sense - Charleston","Storage Sense - Cheshire","Storage Sense - Clarkesville - HWY17","Storage Sense - Columbus","Storage Sense - Fairborn","Storage Sense - Greenville","Storage Sense - Harrisburg - Locust Lane","Storage Sense - Hartselle","Storage Sense - Huntsville - Sparkman","Storage Sense - Ithaca","Storage Sense - Lake Charles","Storage Sense - Leesville","Storage Sense - Lexington KY - Ruccio","Storage Sense - Long Beach","Storage Sense - Memphis - Madison","Storage Sense - Richland Hills","Storage Sense - Ridgeland","Storage Sense - Saraland","Storage Sense - Savannah","Storage Sense - Shreveport - 411 East Bert","Storage Sense - Sulphur","Storage Sense - Theodore","Storage Sense - Troy","Storage Sense - Upper St. Clair","Storage Solutions Deer Park","Storage Solutions Nine Mile","Storage Solutions Riverside","Storage Solutions Spokane","Storelocal Driftwood","Swan Valley Storage LLC","TNT Self Storage","The Storage Place Aledo","Three by Three Storage","ValuSpace Storage - Albany","ValuSpace Storage - Halfmoon","Westpointe New Braunfels Self Storage","Winter's Storage Oxford","Your Extra Closet - Grand Oaks","Your Extra Closet - Mead Drive"],"release_date":"2026-03-18","days_live":202,"value_pct":7.9,"value_label":"Medium"},{"key":"SD-2135","summary":"After completing incident survey page is not refreshing automatically and Time zone issue on calendar.","type":"Bug","quarter":"Q1(Jan-Mar)","hours":7.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2207","summary":"Source of Move-in Chart","type":"Epic","quarter":"Q2(Apr-Jun)","hours":128.0,"facility_count":686,"facility_list":["TNC Self Storage - Souderton","106 Self Storage","222 Self Storage ","3 Key Self Storage","3 Key Self Storage - Lebanon","4 Storage  - Philadelphia","4 Storage - Bristol","4 Storage - Montgomeryville","4 Storage - Ocean Township","A+ Storage - Cordova","A+ Storage - Huntsville","A-Safe Storage Ball","A-Safe Storage Pineville","AA Access Storage","AA Northland Stor-All","AAA Self Storage - Brenham","AAA Self Storage - Hockley","AAA Storage","AAAA Boat, RV & Auto Storage-Freeman- VFA","AAAA Laburnum Race Track Self Storage - LA","AAAA Self Storage - 22","AAAA Self Storage - AR","AAAA Self Storage - BR","AAAA Self Storage - CA","AAAA Self Storage - FO","AAAA Self Storage - HA","AAAA Self Storage - HRP","AAAA Self Storage - MI","AAAA Self Storage - PI","AAAA Self Storage - PO","AAAA Self Storage - TWP","AAAA Self Storage - VWB","AAAA Self Storage -Franklin","AAAA Self Storage -PR","AAAA Self Storage -VCD","AAAA Self Storage -VOX","AAAA Self Storage TI","AAAA Self Storage- CO","AAAA Self Storage- LO","AAAA Self Storage- NE","AAAA Self Storage- NO","AAAA Self Storage- PE","AAAA Self Storage- RI","AAAA Self Storage- RO","AAAA Self Storage- SA","AAAA Self Storage- VCB","AAAA Self Storage- VHR","AAAA Self Storage-18","AAAA Self Storage-Suffolk","AAAA Self Storge - Ferrell Parkway","AAAA self storage- VB","ABCD Econo Storage","ATX Self Storage","All Aboard Storage - Glencoe Depot","All Aboard Storage - Jimmy Ann Depot","All Aboard Storage - Ormond Depot","All Aboard Storage - Port Orange Depot","All American Storage II,LLC -RUX","All Pro Storage","All Purpose Storage","Allsafe Storage","Almighty Storage","American Eagle Self Storage -PG","American Storage - Missouri City","Anderson Self Storage - VMA","Another Attic - I27","Another Attic - Soncy","Appletree Storage - Gonzales","Appletree Storage - Gonzales LA-431","Appletree Storage - Perkins","Area Storage - South Plaza","Attic Storage @ 20","Attic Storage Aspen Creek","Attic Storage Bixby","Attic Storage Brookside","Attic Storage Collinsville","Attic Storage Eudora","Attic Storage Gardner","Attic Storage Jenks","Attic Storage Lake Lotawana","Attic Storage Liberty North","Attic Storage Liberty South","Attic Storage Oak Grove","Attic Storage Owasso","Attic Storage Parkville","Attic Storage Peculiar","Attic Storage Pleasant Hill","Attic Storage Sapulpa","Attic Storage Smithville","Attic Storage Spring Hill","Attic Storage Tulsa Hills","Attic Storage Tulsa Hills Elwood","Attic Storage Woods Chapel","Attic Storage of North Kansas City","Attic Storage of Platte County","Auburn Storage","Available Self Storage","B&G Storage - Atmore","B&G Storage - Atmore - 2nd Ave","B&G Storage - Atmore - Trammell","B&G Storage - Brewton","Bay Mini Storage","Bay Storage","Bee Cave Storage","Bell Ave Self Storage","Bergstrom Storage","Best Yet Storage","Bin 741 Storage ","Blythe Landing Self Storage","Bomarc Self Storage - Bangor","Bomarc Self Storage - Brewer","Bomarc Self Storage - Ellsworth","Bomarc Self Storage - Hampden","Bomarc Self Storage - Newburgh","Brownsville Storage Units","Burke Self Storage","Caddo Mills Climate Storage","Castle Self Storage - Plymouth","Castle Self Storage - South Weymouth","Central Illinois Storage","Channelview Mini Storage","Clarksville Self Storage - Trenton","Clear Lake Storage","Clearbrook Storage","College Park Mini Storage","Columbia Self Storage","Columbia Self Storage - Accord","Columbia Self Storage - Ellenville","Columbia Self Storage - Hamburg","Columbia Self Storage - Middletown","Columbia Self Storage - Middletown OC","Columbia Self Storage - Millville","Columbia Self Storage - Rochelle Park","Columbia Self Storage - South Plainfield","Columbia Self Storage - Valley","Columbia Self Storage Vineland","Columbia Self Storage – Anchor","Cool Spring Storage Center","Cullen Public Storage","Defender Self Storage - Pittsburgh - Greentree","Discount Mini Storage","Discount Storage on Bataan","Discount Storage on El Camino","Discount Storage on Holiday","Diverse Storage","Drive-Up Storage Sparta","EADO Storage","EZ Werks Storage 2","Eagle Drive Storage","Easy Stop Storage - Abilene","Easy Stop Storage - Amarillo","Easy Stop Storage - Branson","Easy Stop Storage - Bushland","Easy Stop Storage - Centerton","Easy Stop Storage - Liberty Hill ","Easy Stop Storage - Lubbock","Easy Stop Storage - Lubbock West","Easy Stop Storage - Midland","Easy Stop Storage - Midland West","Easy Stop Storage - Odessa ","Easy Stop Storage - Plainview","Easy Stop Storage - Sapulpa North ","Easy Stop Storage - Sapulpa South","Easy Stop Storage - Tulsa North","Easy Stop Storage - Tulsa South","Economy Self Storage","Elite Storage & RV","Elizabeth River Self Storage - VSR","Extra Storage Inc.- GVA","Fairless Hills Self Storage","Falcon RV & Boat Storage","Farrell Storage- Butter Lane","Fountainbleau Storage","Freedom Plus Storage","Freedom Self Storage","Frisco Self Storage","Galveston Climate Storage","Garden Self Storage","Georgetown Self Storage","Golden State Storage - Cadence","Golden State Storage - Camarillo","Golden Triangle Storage","Greer Storage LLC- SCG","Guard Dog Storage","GuardBox Storage - Troy","Guardian Self Storage","Happy Dog Storage - Lumberton","Happy Dog Storage - Sour Lake","Happy Self Storage","Hello Space+ FM1044","Home Star Memphis","Home Team Storage","Hopeman Self Storage - WB","I-35/I-435 Self Storage","Interstate Self Storage- GCD","Jackson Self Storage","Katy Ranch","Keep Safe Storage","Kings 625 Self Storage","Kissing Tree Storage","Klein Krimmel Self Storage","Lakeline Storage","Lakeside Storage - Gainesville","Lakewood Mini Storage","Layton Crossing Storage","Little Elm Self Storage","Load and Lock Self Storage - Albrightsville","Load and Lock Self Storage - Canadensis","Load and Lock Self Storage - Palmerton","Load and Lock Self Storage - Walnutport","Load and Lock Self Storage - Weissport","Lock & Roll Storage - Lynchburg","Lock & Roll Storage – Forest","Lock N Roll Storage","LockSmart Climate Storage","Mabank Lakeridge Self Storage","Mabey’s Self Storage – Hudson","Macoby Self Storage","Main Street Storage - Berlin","Maine Coast Storage","Marion Self Storage","Mason Lansing Self Storage","Mayfair Self Storage","Memorial Drive Storage","Meyer Park Storage Center","Midland Self Storage","Midlothian Lakeridge Self Storage","Monomoy Self Storage of North Chatham","Moose Crossing Self Storage","My Attic Self Storage - WF","My Storage","My Storage - Charleston","My Storage - Prescott Valley","My Storage AMMON","My Storage Centerfield","My Storage Erda","My Storage Idaho Falls","MyPlace Self Storage","Nest Storage","Newark Safe Storage","Nipomo Self Storage","North Shepherd Mini Storage","North West Hills Self Storage ","Northgate Storage","Oak Park Self Storage","Ocean Storage - Edinburgh","Ocean Storage - Greenyard","Ocean Storage - Laskin","Ocean Storage - Little Creek","Ocean Storage - Nansemond Parkway","Ocean Storage - Nettles Drive","Ocean Storage - Towne Point","Ocean Storage - Virginia Beach - Birdneck","Ocean Storage - Virginia Beach - Independence","Ocean Storage - Virginia Beach - Northampton","Ocean Storage - Volvo Parkway","Ocean Storage - Yorktown","Overflow Garage Shawnee","Packrat Storage","Patriot Cache Storage","Peninsula Mini Storage - Blades","Peninsula Mini Storage - Dagsboro","Picks Mini Storage","Pines & Trent Storage","Point of the Mountain Storage","Prime Storage - Baltimore","Prime Storage - Baltimore - 3500 Wilkens Ave.","Prime Storage - Boston South End","Prime Storage - Bourne","Prime Storage - Bronx Zerega","Prime Storage - Charlotte","Prime Storage - Clinton Bellefonte Pl","Prime Storage - Conyers","Prime Storage - Dundalk","Prime Storage - Florence","Prime Storage - Greenville Haywood Rd.","Prime Storage - Harrisburg West","Prime Storage - Indio","Prime Storage - Jersey City","Prime Storage - Lexington Angliana Ave.","Prime Storage - Manchester Eddy Rd.","Prime Storage - Monroe","Prime Storage - Providence Dupont Dr","Prime Storage - Queens Astoria","Prime Storage - Rockaway Ave","Prime Storage - Shirley","Prime Storage - Snellville","Prime Storage - Summerville","Prime Storage - Tarrytown","Prime Storage - Union City","Prime Storage - Wichita Maize Rd.","Prime Storage - Wilmington","Prime Storage - Wilmington N. 23rd St.","Prime Storage - Woonsocket","Prime Storages - Queens Jamaica","Princeton Self Storage","ProSafe Storage - Kilmarnock","ProSafe Storage - Little River","ProSafe Storage - Parma","ProSafe Storage - Richmond","Radiant Storage I-10","Ramona Mini Storage","Rent-A-Space - Roanoke - Patrick","Rent-A-Space - Roanoke - Valley","Rent-A-Space - Salem","Right Move - Lakeport Self Storage","Right Move Carthage- Luper Storage","Right Move Flint- Noonday Storage","Right Move Main Street - A&A Self Storage","Right Move Providence- Acme Self Storage","Right Move Storage - Angleton","Right Move Storage - Highway 249","Right Move Storage Aldine","Right Move Storage Alvin","Right Move Storage Champion Boat ","Right Move Storage Ft. Worth NW","Right Move Storage Port Arthur","Right Move Storage Royal Oaks","Right Move Storage Spring","Right Move Storage Tomball","Right Move Storage- Memorial Blvd","Right Move Storage- Rifle","Right Move Storage- Rosharon","Right Move TX 149-All N One Storage","Right Move Wylie","Royse City Secure Storage","Rt 24 Self Storage","Rummel Creek Mini Storage","Ryder’s RV & Self Storage","S'more Space Storage - Willow Street","STORAGExperts at Shea","STORExpress - Etna","Safe Harbor Storage of Clear Lake","Safe Haven Mt Kisco","Safe Place Storage","Salisbury Storage Warehouse","Scot Stor Mini Storage","Seabrook Storage on Highway 146","Second Channelview Mini Storage","SecureSpace Self Storage Atlantic Beach","SecureSpace Self Storage Bee Cave","SecureSpace Self Storage Berkeley","SecureSpace Self Storage Homestead","SecureSpace Self Storage Lakewood","SecureSpace Self Storage Lanham","SecureSpace Self Storage Lynnwood","SecureSpace Self Storage Miami Coral Way","SecureSpace Self Storage Nalley Valley Tacoma","SecureSpace Self Storage Portland 16th","SecureSpace Self Storage Rosemead","SecureSpace Self Storage San Bernardino","SecureSpace Self Storage San Jose Hedding","SecureSpace Self Storage San Jose Lonus","SecureSpace Self Storage San Jose Teresa","Security Self Storage","Security Self Storage and Parking","Sir Stor-A-Lot","SoJo Self Storage","Solid Storage - Opelika","Sound Storage Of Mill Creek","Sound Storage of Lynnwood","South End Self Storage","Southlake Storage","Spacebox Storage - Horn Lake","Spacebox Storage - Nail Rd","Spacebox Storage - Olive Branch","Spicewood Super-Storage","Squirrel Away Storage -SQ2","Stack N Stor - Milton","Stack N Stor - Patterson","Stack N Stor - Rotterdam","Stewart & 89th Self Storage","Stor-U-Self of Newbury","StorQuest Self Storage","StorTropolis - Olathe","StorTropolis Self Storage - Blue Springs","StorTropolis Self Storage - Brighton","StorTropolis Self Storage - Lenexa","StorTropolis Self Storage - Shawnee","StorTropolis Self Storage - Tiffany Springs","Storage Center at Craig Ranch","Storage Club - 34th St S","Storage Depot - Aubrey","Storage Depot - Flower Mound","Storage Depot - Fort Worth","Storage Depot - Wylie","Storage Depot of Gainesville GA","Storage Depot of Gainesville GA - Airport","Storage Depot of Gainesville GA - Dorsey","Storage Depot of Gainesville GA - Linwood","Storage Sense - 2282 East Bert Kouns Industrial Loop","Storage Sense - 73 Storage","Storage Sense - Aiken","Storage Sense - Alexandria","Storage Sense - Alexandria-Bridges","Storage Sense - Apopka","Storage Sense - Asheville","Storage Sense - Augusta - Jimmie Dyess Pkwy","Storage Sense - Augusta - Wheeler","Storage Sense - Ballston Spa","Storage Sense - Berlin","Storage Sense - Bethlehem","Storage Sense - Bird in Hand","Storage Sense - Bonaire","Storage Sense - Bossier City","Storage Sense - Bowling Green - Lain","Storage Sense - Branson","Storage Sense - Branson West","Storage Sense - Bryan","Storage Sense - Canaan","Storage Sense - Cape May Courthhouse  - Rt. 9","Storage Sense - Carlisle","Storage Sense - Carlisle - Trindle","Storage Sense - Chapel Hill","Storage Sense - Charleston","Storage Sense - Charlottesville","Storage Sense - Charlottesville - Albemarle","Storage Sense - Chattanooga","Storage Sense - Cheshire","Storage Sense - Cheshire - Highland","Storage Sense - Clarkesville - HWY17","Storage Sense - Clarksville - Tiny Town","Storage Sense - Clements Ferry","Storage Sense - Clermont","Storage Sense - Cleveland","Storage Sense - College Station","Storage Sense - Columbia","Storage Sense - Columbus","Storage Sense - Cookeville","Storage Sense - Crestwood","Storage Sense - Crestwood - Concord","Storage Sense - Cumming","Storage Sense - Dahlonega","Storage Sense - Dover - Fox Run Road","Storage Sense - Dover - Palomino","Storage Sense - Doylestown","Storage Sense - Duncan","Storage Sense - East Haven","Storage Sense - Easton","Storage Sense - Endicott","Storage Sense - Enon","Storage Sense - Evans","Storage Sense - Fairborn","Storage Sense - Farmville","Storage Sense - Farmville - 1716W","Storage Sense - Farmville - 2010W","Storage Sense - Farmville - 407E","Storage Sense - Folcroft","Storage Sense - Franklinville","Storage Sense - Frazer","Storage Sense - Gainesville - Mountain View","Storage Sense - Georgetown","Storage Sense - Glasgow","Storage Sense - Gloucester","Storage Sense - Greenville","Storage Sense - Groves","Storage Sense - Grovetown","Storage Sense - Hamel","Storage Sense - Hammonton","Storage Sense - Hampton Cove","Storage Sense - Harrisburg - Locust Lane","Storage Sense - Hartselle","Storage Sense - Haslet","Storage Sense - Hattiesburg","Storage Sense - Hattiesburg - Oak","Storage Sense - Hazleton","Storage Sense - Hendersonville","Storage Sense - Hershey","Storage Sense - Hi-Nella","Storage Sense - Hinesville","Storage Sense - Hohenwald","Storage Sense - Hohenwald - Buffalo","Storage Sense - Hohenwald - E Main","Storage Sense - Houston","Storage Sense - Huntsville - County Road","Storage Sense - Huntsville - Green Cove","Storage Sense - Huntsville - Highway 72","Storage Sense - Huntsville - I-45","Storage Sense - Huntsville - Memorial - Pkwy","Storage Sense - Huntsville - Sparkman","Storage Sense - Huntsville - Winchester Rd","Storage Sense - Huntsville- Quality Blvd","Storage Sense - Irving","Storage Sense - Ithaca","Storage Sense - Jonesboro","Storage Sense - Jonestown","Storage Sense - Kennett Square","Storage Sense - Killeen","Storage Sense - King of Prussia","Storage Sense - La Vergne","Storage Sense - Lake Charles","Storage Sense - Lake Nona","Storage Sense - Lancaster","Storage Sense - Lancaster - Gehman","Storage Sense - Lawrence","Storage Sense - Lawrenceburg","Storage Sense - Lebanon","Storage Sense - Leesville","Storage Sense - Lewisburg","Storage Sense - Lexington","Storage Sense - Lexington - South Lake","Storage Sense - Lexington KY - Ruccio","Storage Sense - Littlestown","Storage Sense - Londonderry","Storage Sense - Long Beach","Storage Sense - Macon","Storage Sense - Manassas","Storage Sense - Marmora","Storage Sense - Martinez - Belair Road","Storage Sense - Martinez - Old Evans Road","Storage Sense - Mayfield","Storage Sense - Memphis - Madison","Storage Sense - Mentor","Storage Sense - Metuchen","Storage Sense - Middletown","Storage Sense - Milledgeville","Storage Sense - Moncks Corner","Storage Sense - Monroe","Storage Sense - Moscow Mills","Storage Sense - Moss Bluff","Storage Sense - Mount Pleasant","Storage Sense - New Freedom","Storage Sense - Nicholasville","Storage Sense - Noblesville","Storage Sense - North Augusta","Storage Sense - North Cape May","Storage Sense - OKC Sooner","Storage Sense - Ocean City","Storage Sense - Ocean View","Storage Sense - Owens Cross Roads - James Rd","Storage Sense - Owens Cross Roads - Taylor Lane","Storage Sense - Oxford","Storage Sense - Pawleys Island","Storage Sense - Perry","Storage Sense - Piscataway","Storage Sense - Pittsburgh","Storage Sense - Port Arthur - 9999","Storage Sense - Pottstown","Storage Sense - Pottsville","Storage Sense - Pulaski","Storage Sense - Quakertown","Storage Sense - Reading","Storage Sense - Richland Hills","Storage Sense - Ridgeland","Storage Sense - Rockville","Storage Sense - Salisbury","Storage Sense - San Marcos","Storage Sense - Saraland","Storage Sense - Savannah","Storage Sense - Schuylkill","Storage Sense - Scranton","Storage Sense - Self Serve - East Chatham","Storage Sense - Selinsgrove Lori LN","Storage Sense - Selinsgrove Old Trail","Storage Sense - Seneca","Storage Sense - Shelbyville","Storage Sense - Shreveport - 2121 W Bert Kouns","Storage Sense - Shreveport - 411 East Bert","Storage Sense - Sinking Spring","Storage Sense - Sinking Spring - Mountain","Storage Sense - Sinking Springs - Frush","Storage Sense - Southington","Storage Sense - Southington - Plantsville","Storage Sense - Spring","Storage Sense - Springfield","Storage Sense - Springfield - North","Storage Sense - St Clair","Storage Sense - Stamford","Storage Sense - Statesville - Barkley","Storage Sense - Stephens City","Storage Sense - Sulphur","Storage Sense - Sunbury","Storage Sense - Tampa","Storage Sense - Theodore","Storage Sense - Troy","Storage Sense - Upland","Storage Sense - Upper St. Clair","Storage Sense - Vero Beach - Harbor Point","Storage Sense - Virginia Beach","Storage Sense - Voorheesville","Storage Sense - Walden","Storage Sense - Warner Robins","Storage Sense - Waynesboro","Storage Sense - Weaverville","Storage Sense - West Jefferson","Storage Sense - West Waverly","Storage Sense - Westminster","Storage Sense - Williamsburg - Mooretown","Storage Sense - Williamsburg - Pocahontas","Storage Sense - Williamsburg - Richmond","Storage Sense - Winston Salem - Peters Creek","Storage Sense - Wyncote","Storage Sense - York","Storage Sense Irmo","Storage Sense – Lake Wales","Storage Sense- Warner Robins- Cohen Walker","Storage Solutions Appleway","Storage Solutions Deer Park","Storage Solutions Deer Park (Airport Rd)","Storage Solutions Liberty Lake Harvard","Storage Solutions Liberty Lake Mission","Storage Solutions Nine Mile","Storage Solutions Riverside","Storage Solutions Spokane","Storage Stop ","Storage Ward","Storage of America - Akron","Storage of America - Dort","Storage of America - East Washington","Storage of America - Gratiot","Storage of America - Moline","Storage of America - Oak Harbor","Storage of America - Range Road","Storage of America - Townline","Stowaway Storage","Summit Heated Self Storage","Summit Self Storage - Augusta","Summit Self Storage - Awendaw","Summit Self Storage - Conway","Summit Self Storage - Mills River","Summit Self Storage Summerville","Sunrise Storage","The Attic Self Storage ","The Storage Spot","U-Stor-It Ruckersville-ST","U-Stor-It-VBD","US Storage Centers - Bakersfield Mesa Grande","US Storage Centers - Baltimore","US Storage Centers - Chatsworth De Soto","US Storage Centers - Exton","US Storage Centers - Hawthorne - Brady","US Storage Centers - La Crescenta","US Storage Centers - Middleton","US Storage Centers - Mission Hills","US Storage Centers - Montrose","US Storage Centers - Mount Kisco","US Storage Centers - Needham","US Storage Centers - Philadelphia Columbus","US Storage Centers - Simi Valley","University Storage - Charlotte","Valley Best Storage","Valley Ranch Self Storage","Valley Storage - Akron","Valley Storage - Hickory East","Valley Storage - North Royalton","ValuSpace Storage - Albany","ValuSpace Storage - Halfmoon","ValuSpace Storage - Troy","Vault Storage - Chestertown","Vault Storage - Millington","Vault Storage - Perryville","Vintage RVS","West 18th Street Storage","West Coast Self Storage - Jurupa Valley","West Coast Self Storage Antioch","West Coast Self Storage Dupont","West Coast Self Storage – Grand Mound","West Coast Self-Storage Daly City","West Coast Self-Storage Fremont","West Coast Self-Storage Ontario","West Coast Self-Storage San Jose","West Coast Self-Storage Santa Clara","West Coast Self-Storage Stockton","West Creek Self Storage","West Georgia Self Storage -  Carrollton - Old Bremen","West Georgia Self Storage - Carrollton - Beulah","West Georgia Self Storage - Carrollton - Hwy 27","Westpointe New Braunfels Self Storage","Your Extra Closet - Allison Cove","Your Extra Closet - Brookland","Your Extra Closet - Campus","Your Extra Closet - Clinton","Your Extra Closet - College Hill","Your Extra Closet - Grand Oaks","Your Extra Closet - Hwy 182","Your Extra Closet - Linwood/ Highway 49 South","Your Extra Closet - Lynn Lane","Your Extra Closet - MLK","Your Extra Closet - Mall Drive","Your Extra Closet - McLarty","Your Extra Closet - Mead Drive","Your Extra Closet - North 14th/ Highway 49 North","Your Extra Closet - North Jackson","Your Extra Closet - Reed","Your Extra Closet - Valley View","Your Extra Closet - West"],"release_date":"2026-04-16","days_live":173,"value_pct":10.9,"value_label":"High"},{"key":"SD-2223","summary":"SiteLink — Auto Credit Reconciliation Charge Toggle","type":"Story","quarter":"Q2(Apr-Jun)","hours":48.0,"facility_count":1,"facility_list":["Mabey’s Self Storage – Hudson"],"release_date":"2026-04-28","days_live":161,"value_pct":0.0,"value_label":"Low"},{"key":"SD-2226","summary":"Sitelink integration is not putting the device note","type":"Task","quarter":"Q2(Apr-Jun)","hours":29.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2270","summary":"Substring matching for unit type is case-sensitive and requires full string match","type":"Bug","quarter":"Q2(Apr-Jun)","hours":64.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2278","summary":"SSM: Tier-Based Pricing (Pricing Category Parity with StorEdge)","type":"Story","quarter":"Q2(Apr-Jun)","hours":42.25,"facility_count":1,"facility_list":["Glacier West Marysville"],"release_date":"2026-05-28","days_live":131,"value_pct":0.1,"value_label":"Low"},{"key":"SD-2313","summary":"Missing Device Tile — Regional Inventory Summary must match Facility Dashboard count","type":"Story","quarter":"Q2(Apr-Jun)","hours":40.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2338","summary":"WSS integration","type":"Epic","quarter":"Q3(Jul-Sep)","hours":152.0,"facility_count":0,"facility_list":[],"release_date":"2026-08-17","days_live":50,"value_pct":0.0,"value_label":"Low"},{"key":"SD-2370","summary":"Display month-specific Actual Charge amount on SD Tenant Ledger report for SiteLink accounts","type":"Task","quarter":"Q3(Jul-Sep)","hours":48.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2371","summary":"Automate Daily Premium Vacant Unit Report — Phase 1 (Sitelink)","type":"Story","quarter":"Q3(Jul-Sep)","hours":56.0,"facility_count":39,"facility_list":["106 Self Storage","3 Key Self Storage","3 Key Self Storage - Lebanon","A+ Storage - Cordova","All Pro Storage","B&G Storage - Atmore","B&G Storage - Atmore - 2nd Ave","B&G Storage - Atmore - Trammell","B&G Storage - Brewton","Brownsville Storage Units","Home Star Memphis","Kings 625 Self Storage","Moose Crossing Self Storage","Ocean Storage - Little Creek","Ocean Storage - Nettles Drive","Ocean Storage - Virginia Beach - Northampton","Peninsula Mini Storage - Blades","Princeton Self Storage","ProSafe Storage - Kilmarnock","Stor-U-Self of Newbury","Storage Sense - Bossier City","Storage Sense - Charlottesville","Storage Sense - Charlottesville - Albemarle","Storage Sense - Chattanooga","Storage Sense - Cheshire","Storage Sense - Cheshire - Highland","Storage Sense - Clements Ferry","Storage Sense - Cleveland","Storage Sense - Dahlonega","Storage Sense - Memphis - Madison","Storage Sense - Williamsburg - Mooretown","Sunrise Storage","ValuSpace Storage - Albany","Your Extra Closet - Allison Cove","Your Extra Closet - College Hill","Your Extra Closet - Grand Oaks","Your Extra Closet - Mall Drive","Your Extra Closet - McLarty","Your Extra Closet - West"],"release_date":"2026-08-31","days_live":36,"value_pct":6.8,"value_label":"Medium"},{"key":"SD-2422","summary":"SAM Report Request due to Invoicing","type":"Task","quarter":"Q3(Jul-Sep)","hours":54.68,"facility_count":"unknown","facility_list":[]},{"key":"SD-2424","summary":"SiteLink — First-Month Charge Amount Toggle","type":"Story","quarter":"Q3(Jul-Sep)","hours":101.55,"facility_count":330,"facility_list":["106 Self Storage","3 Key Self Storage","3 Key Self Storage - Lebanon","4 Storage  - Philadelphia","4 Storage - Bristol","4 Storage - Montgomeryville","4 Storage - Ocean Township","A+ Storage - Cordova","A+ Storage - Huntsville","AA Access Storage","ABCD Econo Storage","All Pro Storage","Appletree Storage - Gonzales","Appletree Storage - Gonzales LA-431","Appletree Storage - Perkins","Auburn Storage","Available Self Storage","B&G Storage - Atmore","B&G Storage - Atmore - 2nd Ave","B&G Storage - Atmore - Trammell","B&G Storage - Brewton","Bay Storage","Blythe Landing Self Storage","Brownsville Storage Units","Clarksville Self Storage - Trenton","Clearbrook Storage","Cool Spring Storage Center","Defender Self Storage - Pittsburgh - Greentree","Economy Self Storage","Fairless Hills Self Storage","Fountainbleau Storage","Freedom Self Storage","Georgetown Self Storage","GuardBox Storage - Troy","Home Star Memphis","Keep Safe Storage","Kings 625 Self Storage","Lakeside Storage - Gainesville","Load and Lock Self Storage - Albrightsville","Load and Lock Self Storage - Canadensis","Load and Lock Self Storage - Palmerton","Load and Lock Self Storage - Walnutport","Load and Lock Self Storage - Weissport","Lock & Roll Storage - Lynchburg","Lock & Roll Storage – Forest","Mabey’s Self Storage – Hudson","Macoby Self Storage","Main Street Storage - Berlin","Marion Self Storage","Mason Lansing Self Storage","Moose Crossing Self Storage","Ocean Storage - Edinburgh","Ocean Storage - Greenyard","Ocean Storage - Laskin","Ocean Storage - Little Creek","Ocean Storage - Nettles Drive","Ocean Storage - Towne Point","Ocean Storage - Virginia Beach - Birdneck","Ocean Storage - Virginia Beach - Independence","Ocean Storage - Virginia Beach - Northampton","Ocean Storage - Yorktown","Peninsula Mini Storage - Blades","Peninsula Mini Storage - Dagsboro","Princeton Self Storage","ProSafe Storage - Kilmarnock","ProSafe Storage - Little River","ProSafe Storage - Parma","ProSafe Storage - Richmond","Rent-A-Space - Roanoke - Patrick","Rent-A-Space - Roanoke - Valley","Rent-A-Space - Salem","Rt 24 Self Storage","S'more Space Storage - Willow Street","Salisbury Storage Warehouse","Scot Stor Mini Storage","Solid Storage - Opelika","South End Self Storage","Stor-U-Self of Newbury","StorTropolis - Olathe","StorTropolis Self Storage - Blue Springs","StorTropolis Self Storage - Brighton","StorTropolis Self Storage - Lenexa","StorTropolis Self Storage - Shawnee","StorTropolis Self Storage - Tiffany Springs","Storage Club - 34th St S","Storage Depot - Aubrey","Storage Depot - Flower Mound","Storage Depot - Fort Worth","Storage Depot - Wylie","Storage Depot of Gainesville GA","Storage Depot of Gainesville GA - Airport","Storage Depot of Gainesville GA - Dorsey","Storage Depot of Gainesville GA - Linwood","Storage Sense - 2282 East Bert Kouns Industrial Loop","Storage Sense - 73 Storage","Storage Sense - Aiken","Storage Sense - Alexandria","Storage Sense - Alexandria-Bridges","Storage Sense - Apopka","Storage Sense - Asheville","Storage Sense - Augusta - Jimmie Dyess Pkwy","Storage Sense - Augusta - Wheeler","Storage Sense - Ballston Spa","Storage Sense - Berlin","Storage Sense - Bethlehem","Storage Sense - Bird in Hand","Storage Sense - Bonaire","Storage Sense - Bossier City","Storage Sense - Bowling Green - Lain","Storage Sense - Branson","Storage Sense - Branson West","Storage Sense - Bryan","Storage Sense - Canaan","Storage Sense - Cape May Courthhouse  - Rt. 9","Storage Sense - Carlisle","Storage Sense - Carlisle - Trindle","Storage Sense - Chapel Hill","Storage Sense - Charleston","Storage Sense - Charlottesville","Storage Sense - Charlottesville - Albemarle","Storage Sense - Chattanooga","Storage Sense - Cheshire","Storage Sense - Cheshire - Highland","Storage Sense - Clarkesville - HWY17","Storage Sense - Clarksville - Tiny Town","Storage Sense - Clements Ferry","Storage Sense - Clermont","Storage Sense - Cleveland","Storage Sense - College Station","Storage Sense - Columbia","Storage Sense - Columbus","Storage Sense - Cookeville","Storage Sense - Crestwood","Storage Sense - Crestwood - Concord","Storage Sense - Cumming","Storage Sense - Dahlonega","Storage Sense - Dover - Fox Run Road","Storage Sense - Dover - Palomino","Storage Sense - Doylestown","Storage Sense - Duncan","Storage Sense - East Haven","Storage Sense - Easton","Storage Sense - Endicott","Storage Sense - Enon","Storage Sense - Evans","Storage Sense - Fairborn","Storage Sense - Farmville","Storage Sense - Farmville - 1716W","Storage Sense - Farmville - 2010W","Storage Sense - Farmville - 407E","Storage Sense - Folcroft","Storage Sense - Franklinville","Storage Sense - Frazer","Storage Sense - Gainesville - Mountain View","Storage Sense - Georgetown","Storage Sense - Glasgow","Storage Sense - Gloucester","Storage Sense - Greenville","Storage Sense - Groves","Storage Sense - Grovetown","Storage Sense - Hamel","Storage Sense - Hammonton","Storage Sense - Hampton Cove","Storage Sense - Harrisburg - Locust Lane","Storage Sense - Hartselle","Storage Sense - Haslet","Storage Sense - Hattiesburg","Storage Sense - Hattiesburg - Oak","Storage Sense - Hazleton","Storage Sense - Hendersonville","Storage Sense - Hershey","Storage Sense - Hi-Nella","Storage Sense - Hinesville","Storage Sense - Hohenwald","Storage Sense - Hohenwald - Buffalo","Storage Sense - Hohenwald - E Main","Storage Sense - Houston","Storage Sense - Huntsville - County Road","Storage Sense - Huntsville - Green Cove","Storage Sense - Huntsville - Highway 72","Storage Sense - Huntsville - I-45","Storage Sense - Huntsville - Memorial - Pkwy","Storage Sense - Huntsville - Sparkman","Storage Sense - Huntsville - Winchester Rd","Storage Sense - Huntsville- Quality Blvd","Storage Sense - Irving","Storage Sense - Ithaca","Storage Sense - Jonesboro","Storage Sense - Jonestown","Storage Sense - Kennett Square","Storage Sense - Killeen","Storage Sense - King of Prussia","Storage Sense - La Vergne","Storage Sense - Lake Charles","Storage Sense - Lake Nona","Storage Sense - Lancaster - Gehman","Storage Sense - Lawrenceburg","Storage Sense - Lebanon","Storage Sense - Leesville","Storage Sense - Lewisburg","Storage Sense - Lexington","Storage Sense - Lexington - South Lake","Storage Sense - Lexington KY - Ruccio","Storage Sense - Littlestown","Storage Sense - Londonderry","Storage Sense - Long Beach","Storage Sense - Macon","Storage Sense - Marmora","Storage Sense - Martinez - Belair Road","Storage Sense - Martinez - Old Evans Road","Storage Sense - Mayfield","Storage Sense - Memphis - Madison","Storage Sense - Mentor","Storage Sense - Metuchen","Storage Sense - Middletown","Storage Sense - Milledgeville","Storage Sense - Monroe","Storage Sense - Moscow Mills","Storage Sense - Moss Bluff","Storage Sense - Mount Pleasant","Storage Sense - New Freedom","Storage Sense - Nicholasville","Storage Sense - Noblesville","Storage Sense - North Augusta","Storage Sense - North Cape May","Storage Sense - OKC Sooner","Storage Sense - Ocean City","Storage Sense - Ocean View","Storage Sense - Owens Cross Roads - James Rd","Storage Sense - Owens Cross Roads - Taylor Lane","Storage Sense - Oxford","Storage Sense - Pawleys Island","Storage Sense - Perry","Storage Sense - Piscataway","Storage Sense - Pittsburgh","Storage Sense - Port Arthur - 9999","Storage Sense - Pottstown","Storage Sense - Pottsville","Storage Sense - Pulaski","Storage Sense - Quakertown","Storage Sense - Reading","Storage Sense - Richland Hills","Storage Sense - Ridgeland","Storage Sense - Rockville","Storage Sense - Salisbury","Storage Sense - San Marcos","Storage Sense - Saraland","Storage Sense - Savannah","Storage Sense - Schuylkill","Storage Sense - Scranton","Storage Sense - Self Serve - East Chatham","Storage Sense - Selinsgrove Lori LN","Storage Sense - Selinsgrove Old Trail","Storage Sense - Seneca","Storage Sense - Shelbyville","Storage Sense - Shreveport - 2121 W Bert Kouns","Storage Sense - Shreveport - 411 East Bert","Storage Sense - Sinking Spring","Storage Sense - Sinking Spring - Mountain","Storage Sense - Sinking Springs - Frush","Storage Sense - Southington","Storage Sense - Southington - Plantsville","Storage Sense - Spring","Storage Sense - Springfield","Storage Sense - Springfield - North","Storage Sense - St Clair","Storage Sense - Stamford","Storage Sense - Statesville - Barkley","Storage Sense - Sulphur","Storage Sense - Sunbury","Storage Sense - Tampa","Storage Sense - Theodore","Storage Sense - Troy","Storage Sense - Upland","Storage Sense - Upper St. Clair","Storage Sense - Vero Beach - Harbor Point","Storage Sense - Virginia Beach","Storage Sense - Voorheesville","Storage Sense - Walden","Storage Sense - Warner Robins","Storage Sense - Waynesboro","Storage Sense - Weaverville","Storage Sense - West Jefferson","Storage Sense - West Waverly","Storage Sense - Westminster","Storage Sense - Williamsburg - Mooretown","Storage Sense - Williamsburg - Pocahontas","Storage Sense - Williamsburg - Richmond","Storage Sense - Winston Salem - Peters Creek","Storage Sense - Wyncote","Storage Sense - York","Storage Sense Irmo","Storage Sense – Lake Wales","Storage Sense- Warner Robins- Cohen Walker","Storage Ward","Summit Self Storage - Augusta","Summit Self Storage - Awendaw","Summit Self Storage - Conway","Summit Self Storage - Mills River","Summit Self Storage Summerville","Sunrise Storage","University Storage - Charlotte","ValuSpace Storage - Albany","ValuSpace Storage - Halfmoon","ValuSpace Storage - Troy","Vault Storage - Chestertown","Vault Storage - Millington","Vault Storage - Perryville","West Creek Self Storage","West Georgia Self Storage -  Carrollton - Old Bremen","West Georgia Self Storage - Carrollton - Beulah","West Georgia Self Storage - Carrollton - Hwy 27","Your Extra Closet - Allison Cove","Your Extra Closet - Brookland","Your Extra Closet - Campus","Your Extra Closet - Clinton","Your Extra Closet - College Hill","Your Extra Closet - Grand Oaks","Your Extra Closet - Hwy 182","Your Extra Closet - Linwood/ Highway 49 South","Your Extra Closet - Lynn Lane","Your Extra Closet - MLK","Your Extra Closet - Mall Drive","Your Extra Closet - McLarty","Your Extra Closet - Mead Drive","Your Extra Closet - North 14th/ Highway 49 North","Your Extra Closet - North Jackson","Your Extra Closet - Reed","Your Extra Closet - Valley View","Your Extra Closet - West"],"release_date":"2026-07-29","days_live":69,"value_pct":16.6,"value_label":"High"},{"key":"SD-2447","summary":"SiteLink Daily Sweep — Post-Move-In Eligibility & Recurring Charge Reconciliation","type":"Story","quarter":"Q3(Jul-Sep)","hours":80.0,"facility_count":331,"facility_list":["106 Self Storage","3 Key Self Storage","3 Key Self Storage - Lebanon","4 Storage  - Philadelphia","4 Storage - Bristol","4 Storage - Montgomeryville","4 Storage - Ocean Township","A+ Storage - Cordova","A+ Storage - Huntsville","AA Access Storage","ABCD Econo Storage","All Pro Storage","Appletree Storage - Gonzales","Appletree Storage - Gonzales LA-431","Appletree Storage - Perkins","Auburn Storage","Available Self Storage","B&G Storage - Atmore","B&G Storage - Atmore - 2nd Ave","B&G Storage - Atmore - Trammell","B&G Storage - Brewton","Bay Storage","Blythe Landing Self Storage","Brownsville Storage Units","Clarksville Self Storage - Trenton","Clearbrook Storage","Cool Spring Storage Center","Defender Self Storage - Pittsburgh - Greentree","Economy Self Storage","Fairless Hills Self Storage","Fountainbleau Storage","Freedom Self Storage","Georgetown Self Storage","GuardBox Storage - Troy","Home Star Memphis","Keep Safe Storage","Kings 625 Self Storage","Lakeside Storage - Gainesville","Load and Lock Self Storage - Albrightsville","Load and Lock Self Storage - Canadensis","Load and Lock Self Storage - Palmerton","Load and Lock Self Storage - Walnutport","Load and Lock Self Storage - Weissport","Lock & Roll Storage - Lynchburg","Lock & Roll Storage – Forest","Macoby Self Storage","Main Street Storage - Berlin","Marion Self Storage","Mason Lansing Self Storage","Moose Crossing Self Storage","Ocean Storage - Edinburgh","Ocean Storage - Greenyard","Ocean Storage - Laskin","Ocean Storage - Little Creek","Ocean Storage - Nettles Drive","Ocean Storage - Towne Point","Ocean Storage - Virginia Beach - Birdneck","Ocean Storage - Virginia Beach - Independence","Ocean Storage - Virginia Beach - Northampton","Ocean Storage - Yorktown","Peninsula Mini Storage - Blades","Peninsula Mini Storage - Dagsboro","Princeton Self Storage","ProSafe Storage - Kilmarnock","ProSafe Storage - Little River","ProSafe Storage - Parma","ProSafe Storage - Richmond","Rent-A-Space - Roanoke - Patrick","Rent-A-Space - Roanoke - Valley","Rent-A-Space - Salem","Rt 24 Self Storage","S'more Space Storage - Willow Street","Salisbury Storage Warehouse","Scot Stor Mini Storage","Sir Stor-A-Lot","Solid Storage - Opelika","South End Self Storage","Stor-U-Self of Newbury","StorTropolis - Olathe","StorTropolis Self Storage - Blue Springs","StorTropolis Self Storage - Brighton","StorTropolis Self Storage - Lenexa","StorTropolis Self Storage - Shawnee","StorTropolis Self Storage - Tiffany Springs","Storage Club - 34th St S","Storage Depot - Aubrey","Storage Depot - Flower Mound","Storage Depot - Fort Worth","Storage Depot - Wylie","Storage Depot of Gainesville GA","Storage Depot of Gainesville GA - Airport","Storage Depot of Gainesville GA - Dorsey","Storage Depot of Gainesville GA - Linwood","Storage Sense - 2282 East Bert Kouns Industrial Loop","Storage Sense - 73 Storage","Storage Sense - Aiken","Storage Sense - Alexandria","Storage Sense - Alexandria-Bridges","Storage Sense - Apopka","Storage Sense - Asheville","Storage Sense - Augusta - Jimmie Dyess Pkwy","Storage Sense - Augusta - Wheeler","Storage Sense - Ballston Spa","Storage Sense - Berlin","Storage Sense - Bethlehem","Storage Sense - Bird in Hand","Storage Sense - Bonaire","Storage Sense - Bossier City","Storage Sense - Bowling Green - Lain","Storage Sense - Branson","Storage Sense - Branson West","Storage Sense - Bryan","Storage Sense - Canaan","Storage Sense - Cape May Courthhouse  - Rt. 9","Storage Sense - Carlisle","Storage Sense - Carlisle - Trindle","Storage Sense - Chapel Hill","Storage Sense - Charleston","Storage Sense - Charlottesville","Storage Sense - Charlottesville - Albemarle","Storage Sense - Chattanooga","Storage Sense - Cheshire","Storage Sense - Cheshire - Highland","Storage Sense - Clarkesville - HWY17","Storage Sense - Clarksville - Tiny Town","Storage Sense - Clements Ferry","Storage Sense - Clermont","Storage Sense - Cleveland","Storage Sense - College Station","Storage Sense - Columbia","Storage Sense - Columbus","Storage Sense - Cookeville","Storage Sense - Crestwood","Storage Sense - Crestwood - Concord","Storage Sense - Cumming","Storage Sense - Dahlonega","Storage Sense - Dover - Fox Run Road","Storage Sense - Dover - Palomino","Storage Sense - Doylestown","Storage Sense - Duncan","Storage Sense - East Haven","Storage Sense - Easton","Storage Sense - Endicott","Storage Sense - Enon","Storage Sense - Evans","Storage Sense - Fairborn","Storage Sense - Farmville","Storage Sense - Farmville - 1716W","Storage Sense - Farmville - 2010W","Storage Sense - Farmville - 407E","Storage Sense - Folcroft","Storage Sense - Franklinville","Storage Sense - Frazer","Storage Sense - Gainesville - Mountain View","Storage Sense - Georgetown","Storage Sense - Glasgow","Storage Sense - Gloucester","Storage Sense - Greenville","Storage Sense - Groves","Storage Sense - Grovetown","Storage Sense - Hamel","Storage Sense - Hammonton","Storage Sense - Hampton Cove","Storage Sense - Harrisburg - Locust Lane","Storage Sense - Hartselle","Storage Sense - Haslet","Storage Sense - Hattiesburg","Storage Sense - Hattiesburg - Oak","Storage Sense - Hazleton","Storage Sense - Hendersonville","Storage Sense - Hershey","Storage Sense - Hi-Nella","Storage Sense - Hinesville","Storage Sense - Hohenwald","Storage Sense - Hohenwald - Buffalo","Storage Sense - Hohenwald - E Main","Storage Sense - Houston","Storage Sense - Huntsville - County Road","Storage Sense - Huntsville - Green Cove","Storage Sense - Huntsville - Highway 72","Storage Sense - Huntsville - I-45","Storage Sense - Huntsville - Memorial - Pkwy","Storage Sense - Huntsville - Sparkman","Storage Sense - Huntsville - Winchester Rd","Storage Sense - Huntsville- Quality Blvd","Storage Sense - Irving","Storage Sense - Ithaca","Storage Sense - Jonesboro","Storage Sense - Jonestown","Storage Sense - Kennett Square","Storage Sense - Killeen","Storage Sense - King of Prussia","Storage Sense - La Vergne","Storage Sense - Lake Charles","Storage Sense - Lake Nona","Storage Sense - Lancaster","Storage Sense - Lancaster - Gehman","Storage Sense - Lawrenceburg","Storage Sense - Lebanon","Storage Sense - Leesville","Storage Sense - Lewisburg","Storage Sense - Lexington","Storage Sense - Lexington - South Lake","Storage Sense - Lexington KY - Ruccio","Storage Sense - Littlestown","Storage Sense - Londonderry","Storage Sense - Long Beach","Storage Sense - Macon","Storage Sense - Marmora","Storage Sense - Martinez - Belair Road","Storage Sense - Martinez - Old Evans Road","Storage Sense - Mayfield","Storage Sense - Memphis - Madison","Storage Sense - Mentor","Storage Sense - Metuchen","Storage Sense - Middletown","Storage Sense - Milledgeville","Storage Sense - Monroe","Storage Sense - Moscow Mills","Storage Sense - Moss Bluff","Storage Sense - Mount Pleasant","Storage Sense - New Freedom","Storage Sense - Nicholasville","Storage Sense - Noblesville","Storage Sense - North Augusta","Storage Sense - North Cape May","Storage Sense - OKC Sooner","Storage Sense - Ocean City","Storage Sense - Ocean View","Storage Sense - Owens Cross Roads - James Rd","Storage Sense - Owens Cross Roads - Taylor Lane","Storage Sense - Oxford","Storage Sense - Pawleys Island","Storage Sense - Perry","Storage Sense - Piscataway","Storage Sense - Pittsburgh","Storage Sense - Port Arthur - 9999","Storage Sense - Pottstown","Storage Sense - Pottsville","Storage Sense - Pulaski","Storage Sense - Quakertown","Storage Sense - Reading","Storage Sense - Richland Hills","Storage Sense - Ridgeland","Storage Sense - Rockville","Storage Sense - Salisbury","Storage Sense - San Marcos","Storage Sense - Saraland","Storage Sense - Savannah","Storage Sense - Schuylkill","Storage Sense - Scranton","Storage Sense - Self Serve - East Chatham","Storage Sense - Selinsgrove Lori LN","Storage Sense - Selinsgrove Old Trail","Storage Sense - Seneca","Storage Sense - Shelbyville","Storage Sense - Shreveport - 2121 W Bert Kouns","Storage Sense - Shreveport - 411 East Bert","Storage Sense - Sinking Spring","Storage Sense - Sinking Spring - Mountain","Storage Sense - Sinking Springs - Frush","Storage Sense - Southington","Storage Sense - Southington - Plantsville","Storage Sense - Spring","Storage Sense - Springfield","Storage Sense - Springfield - North","Storage Sense - St Clair","Storage Sense - Stamford","Storage Sense - Statesville - Barkley","Storage Sense - Sulphur","Storage Sense - Sunbury","Storage Sense - Tampa","Storage Sense - Theodore","Storage Sense - Troy","Storage Sense - Upland","Storage Sense - Upper St. Clair","Storage Sense - Vero Beach - Harbor Point","Storage Sense - Virginia Beach","Storage Sense - Voorheesville","Storage Sense - Walden","Storage Sense - Warner Robins","Storage Sense - Waynesboro","Storage Sense - Weaverville","Storage Sense - West Jefferson","Storage Sense - West Waverly","Storage Sense - Westminster","Storage Sense - Williamsburg - Mooretown","Storage Sense - Williamsburg - Pocahontas","Storage Sense - Williamsburg - Richmond","Storage Sense - Winston Salem - Peters Creek","Storage Sense - Wyncote","Storage Sense - York","Storage Sense Irmo","Storage Sense – Lake Wales","Storage Sense- Warner Robins- Cohen Walker","Storage Ward","Summit Self Storage - Augusta","Summit Self Storage - Awendaw","Summit Self Storage - Conway","Summit Self Storage - Mills River","Summit Self Storage Summerville","Sunrise Storage","University Storage - Charlotte","ValuSpace Storage - Albany","ValuSpace Storage - Halfmoon","ValuSpace Storage - Troy","Vault Storage - Chestertown","Vault Storage - Millington","Vault Storage - Perryville","West Creek Self Storage","West Georgia Self Storage -  Carrollton - Old Bremen","West Georgia Self Storage - Carrollton - Beulah","West Georgia Self Storage - Carrollton - Hwy 27","Your Extra Closet - Allison Cove","Your Extra Closet - Brookland","Your Extra Closet - Campus","Your Extra Closet - Clinton","Your Extra Closet - College Hill","Your Extra Closet - Grand Oaks","Your Extra Closet - Hwy 182","Your Extra Closet - Linwood/ Highway 49 South","Your Extra Closet - Lynn Lane","Your Extra Closet - MLK","Your Extra Closet - Mall Drive","Your Extra Closet - McLarty","Your Extra Closet - Mead Drive","Your Extra Closet - North 14th/ Highway 49 North","Your Extra Closet - North Jackson","Your Extra Closet - Reed","Your Extra Closet - Valley View","Your Extra Closet - West"],"release_date":"2026-09-08","days_live":28,"value_pct":52.0,"value_label":"Extensive"},{"key":"SD-1857","summary":"Monument Integration","type":"Epic","quarter":"Q1(Jan-Mar)","hours":349.58,"facility_count":57,"facility_list":["A-Safe Storage Ball","A-Safe Storage Pineville","All Purpose Storage","Burke Self Storage","Channelview Mini Storage","Clear Lake Storage","College Park Mini Storage","Eagle Drive Storage","Guard Dog Storage","Happy Dog Storage - Lumberton","Happy Dog Storage - Sour Lake","Happy Self Storage","Hockley Storage Center","Ideal Self Storage - Clark","Ideal Self Storage - Gatesville","Ideal Self Storage - Hewitt","Ideal Self Storage - Industrial","Ideal Self Storage - La Salle","Ideal Self Storage - Loop 340","Ideal Self Storage - New Road","Ideal Self Storage - Sanger","Ideal Self Storage- Gatesville 36","Ideal Self Storage-Ennis","Katy Ranch","Locker Storage Claremore","Locker Storage Coweta North/South","Locker Storage Midtown","Locker Storage Parking","Ottawa Easy Storage","Ramona Mini Storage","Right Move - Lakeport Self Storage","Right Move Carthage- Luper Storage","Right Move Flint- Noonday Storage","Right Move Main Street - A&A Self Storage","Right Move Providence- Acme Self Storage","Right Move Storage - Angleton","Right Move Storage - Highway 249","Right Move Storage - Hufsmith","Right Move Storage Aldine","Right Move Storage Alvin","Right Move Storage Champion Boat ","Right Move Storage Ft. Worth NW","Right Move Storage Port Arthur","Right Move Storage Royal Oaks","Right Move Storage Spring","Right Move Storage Tomball","Right Move Storage- Memorial Blvd","Right Move Storage- Rifle","Right Move Storage- Rosharon","Right Move TX 149-All N One Storage","Right Move Wylie","Royal Storage- Brookshire","Second Channelview Mini Storage","The Storage Place - TX-19","The Storage Place Aledo","The Storage Place Cleburne","Waller Storage Center"],"release_date":"2026-02-26","days_live":222,"value_pct":0.3,"value_label":"Low"}],"total_hours":2839.25},"Unassigned":{"features":[{"key":"SD-2199","summary":"SD \"Claude Code\" Integration & Usage","type":"Epic","quarter":"Q1(Jan-Mar)","hours":80.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2153","summary":"Monument Integration (Technical fixes)","type":"Epic","quarter":"Q1(Jan-Mar)","hours":227.08,"facility_count":57,"facility_list":["A-Safe Storage Ball","A-Safe Storage Pineville","All Purpose Storage","Burke Self Storage","Channelview Mini Storage","Clear Lake Storage","College Park Mini Storage","Eagle Drive Storage","Guard Dog Storage","Happy Dog Storage - Lumberton","Happy Dog Storage - Sour Lake","Happy Self Storage","Hockley Storage Center","Ideal Self Storage - Clark","Ideal Self Storage - Gatesville","Ideal Self Storage - Hewitt","Ideal Self Storage - Industrial","Ideal Self Storage - La Salle","Ideal Self Storage - Loop 340","Ideal Self Storage - New Road","Ideal Self Storage - Sanger","Ideal Self Storage- Gatesville 36","Ideal Self Storage-Ennis","Katy Ranch","Locker Storage Claremore","Locker Storage Coweta North/South","Locker Storage Midtown","Locker Storage Parking","Ottawa Easy Storage","Ramona Mini Storage","Right Move - Lakeport Self Storage","Right Move Carthage- Luper Storage","Right Move Flint- Noonday Storage","Right Move Main Street - A&A Self Storage","Right Move Providence- Acme Self Storage","Right Move Storage - Angleton","Right Move Storage - Highway 249","Right Move Storage - Hufsmith","Right Move Storage Aldine","Right Move Storage Alvin","Right Move Storage Champion Boat ","Right Move Storage Ft. Worth NW","Right Move Storage Port Arthur","Right Move Storage Royal Oaks","Right Move Storage Spring","Right Move Storage Tomball","Right Move Storage- Memorial Blvd","Right Move Storage- Rifle","Right Move Storage- Rosharon","Right Move TX 149-All N One Storage","Right Move Wylie","Royal Storage- Brookshire","Second Channelview Mini Storage","The Storage Place - TX-19","The Storage Place Aledo","The Storage Place Cleburne","Waller Storage Center"],"release_date":"2026-02-26","days_live":222,"value_pct":0.4,"value_label":"Low"},{"key":"SD-2362","summary":"Inventory Improvements","type":"Epic","quarter":"Q2(Apr-Jun)","hours":4.0,"facility_count":"unknown","facility_list":[]}],"total_hours":311.08},"Connor":{"features":[{"key":"SD-2225","summary":"Smart Unit Matching: Substring match for Unit Amenity + Multi-select Recurring Charges across all PMS solutions","type":"Task","quarter":"Q2(Apr-Jun)","hours":16.0,"facility_count":"unknown","facility_list":[]},{"key":"SD-2130","summary":"Smart Unit To Zone Mapping","type":"Epic","quarter":"Q3(Jul-Sep)","hours":142.0,"facility_count":7,"facility_list":["Discount Storage on Holiday","Kalamazoo Storage Center","Storage Center at Craig Ranch","Discount Storage on Bataan","Three by Three Storage","ATX Self Storage","SecureSpace Self Storage Los Angeles Firestone"],"release_date":"2026-06-30","days_live":98,"value_pct":0.2,"value_label":"Low"},{"key":"SD-2497","summary":"Mass Marketing Automation -SW Task","type":"Epic","quarter":"Q3(Jul-Sep)","hours":24.0,"facility_count":null,"facility_list":[]},{"key":"SD-1931","summary":"VV+ Incidents","type":"Epic","quarter":"Q1(Jan-Mar)","hours":48.0,"facility_count":8,"facility_list":["AAAA Self Storge - Ferrell Parkway","Brutus Self Storage","Kalamazoo Storage Center","MJ Self Storage","Orlando Self Storage","Right Move Storage Ft. Worth NW","Safeway Storage","Three by Three Storage"],"release_date":"2026-01-07","days_live":272,"value_pct":0.2,"value_label":"Low"}],"total_hours":230.0}},"kanban":{"Sundhar Hari":{"cards":[{"key":"SDKANBAN-2127","summary":"Completing Incident Survey for SMU Incidents is not changing the Incident Resolution Task disposition to 'Done'","status":"Moved to Prod","hours":40.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2433","summary":"3 Key Self Storage - Lebanon: Cannot clear notifications for Assigning a Device to a Unit when there is a Device assigned to each unit","status":"In Progress","hours":40.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-1533","summary":"Incorrect “Smart Units Added Yesterday” Count in Daily Summary – Summit Heated Self Storage.","status":"Moved to Prod","hours":24.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2043","summary":"Phase 2 Fix - Implement a messaging queue from PMS system and receive in the backoffice.","status":"Ready for Review","hours":24.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2053","summary":"Duplicates on EZ Werks Storage 2 Dashboard","status":"Moved to Prod","hours":24.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2208","summary":"Attic - Move Out Notification","status":"Moved to Prod","hours":24.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2311","summary":"Concerning Activity Tile is not Displaying 'No' SMU Incident","status":"Dev Done","hours":24.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2341","summary":"Add script to remove duplicate records from backoffice data","status":"Moved to Prod","hours":24.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2450","summary":"EZ Werks - Sitelink Not Pulling Through Correctly","status":"Moved to Prod","hours":24.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2125","summary":"SecureSpace Organization - 'Motion Detected' > Robo Call / Slack Alerts delayed 3-5 minutes","status":"Moved to Prod","hours":23.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2042","summary":"Phase 1 Fix -Remove fall back implementations","status":"Moved to Prod","hours":20.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2187","summary":"Duplicate Smart Units appearing after StorEdge sync for Meyer Park Storage Center","status":"Moved to Prod","hours":20.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2366","summary":"Add User Properties to UserPilot for Better Customer Segmentation","status":"Moved to Prod","hours":20.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2441","summary":"Unable to Clear Stale Task Notifications from Dashboard – North West Hills Self Storage","status":"Moved to Prod","hours":20.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2543","summary":"Alternate Mobile Number Reappears After Deletion in Smart Unit and Renters – North West Hills Self Storage","status":"Dev Done","hours":20.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-1659","summary":"Non-smart unit tenants and smart unit tenants without device is also receiving the notification \"no longer disabled for non-payment\".","status":"Moved to Prod","hours":16.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2138","summary":"Gary Schneider Can't Reset Password","status":"Moved to Prod","hours":16.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2188","summary":"Invoicing Error: Incorrect Value for Tier 3 Units","status":"Moved to Prod","hours":16.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2289","summary":"False Move out's happened in SSM facility","status":"Moved to Prod","hours":16.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2381","summary":"Mobile pre-install scan not working for Samsung/Android users","status":"Moved to Prod","hours":16.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2458","summary":"Tenant keeps getting moved in when they dont have parameters assigned","status":"Moved to Prod","hours":15.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2075","summary":"Units not moved in to the dashboard","status":"Moved to Prod","hours":14.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2296","summary":"SiteLink sync not completing for SecureSpace Antioch, Horn Lake, and AAA Storage","status":"Moved to Prod","hours":12.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-1455","summary":"False “Removed SD” Events in Unit History at Alamo Eisenhauer – storEDGE Integration Issue","status":"Moved to Prod","hours":10.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2120","summary":"VA-VIR-06 - No Robo Call Alerts for After Hours Incidents!","status":"Moved to Prod","hours":10.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2261","summary":"FMSI: Fix cross-site tenant move-out loop — scope unit_assignment_remove_changes to current facility","status":"Moved to Prod","hours":10.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2439","summary":"Duplicate Units at Right Move Storage Rifle","status":"Moved to Prod","hours":10.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2307","summary":"Unable to access unit C71","status":"Moved to Prod","hours":9.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-1574","summary":"Spring Branch - Smart Unit Not Syncing to StorageDefender for Tenant Rose (Unit E041).","status":"Moved to Prod","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-1786","summary":"Storedge  Notes: Repeated Sensor Add/Remove Events for Unit #F1027 at Oakley Gateway.","status":"Moved to Prod","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-1989","summary":"Unit type change taking 3 days to update in dashboard","status":"Moved to Prod","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2004","summary":"StorEDGE - Lots of Could not find facility for ID warnings","status":"Moved to Prod","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2102","summary":"Missing Charge email needs to be updated","status":"Moved to Prod","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2108","summary":"Error reconciling site:","status":"In Progress","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2122","summary":"Completed Tasks are showing as Overdue in Sitelink for TX-TEM-02","status":"Moved to Prod","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2152","summary":"Unit will not move out of dashboard","status":"Moved to Prod","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2308","summary":"Unexpected Move-Out/Move-In Alert for Tenant – Unit 812 (Southlake Storage).","status":"Moved to Prod","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2324","summary":"Billing dispositions in BO","status":"Moved to Prod","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2343","summary":"Text Error: Trusted Self Storage Professional","status":"Moved to Prod","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2457","summary":"Incident for XP devices are not getting created if multi unit motion toggle and after hours confirmation filter toggle is enabled","status":"In Progress","hours":8.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2481","summary":"Incident Survey Form Not Displaying After Clicking Resolve – Diverse Storage","status":"Moved to Prod","hours":8.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2528","summary":"Prime Storage - Jersey City – SiteLink Sync Status Not Updating","status":"Moved to Prod","hours":8.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2568","summary":"Shipment Log - Scanning from computer is not efficient and scans incorrect device IDs while using scanner linked with PC","status":"Waiting for CS team","hours":8.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2576","summary":"Drive-Up Storage Sparta – Units A056, A008, and SP5 Not Moving Out of SD Dashboard","status":"Moved to Prod","hours":8.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2068","summary":"Increase max_deferred_updates_per_run Limit for Inconsistency Feature","status":"Moved to Prod","hours":6.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2335","summary":"While resetting a facility and resyncing it again, the external_id was not updated in the billing_accounts table.","status":"Moved to Prod","hours":6.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2340","summary":"External IDs are not removed from backoffice data during reset","status":"Moved to Prod","hours":6.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2548","summary":"Scan Device Function - numerous inconsistencies on the same platforms (android and iOs) + no way to scan device when Users login to SD from their phones","status":"QA Done Feature Branch","hours":6.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2552","summary":"Really need to fix the \"Incident Duration\" values in Incident Resolution tile","status":"Dev Done","hours":6.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-1717","summary":"Incorrect Smart Unit Notifications Sent to Past Tenants After Pre-Installs – Allsafe Self-Storage Dublin Cubix (CA-DUB-01).","status":"Moved to Prod","hours":5.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2103","summary":"Old Tenant Receiving Notifications - My Garage Rusk","status":"Moved to Prod","hours":5.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2107","summary":"Gateways are not showing on OPS Team Report","status":"Moved to Prod","hours":5.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2130","summary":"Need a report that shows ALL SAM device ID's","status":"Moved to Prod","hours":5.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2172","summary":"Constant Move Out Message For Tenant - My Garage 155","status":"Moved to Prod","hours":5.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2320","summary":"Dismiss All CTA not working on Facility Level for new SAM Locations and need to be fixed.","status":"Moved to Prod","hours":5.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2351","summary":"Bee Cave Storage — Move-in Activation Email/Notification Not Being Sent","status":"Moved to Prod","hours":5.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2420","summary":"Auto Enrollment Mode: Pre-install alert fires after sync — UI old settings not wiped on backoffice start sync","status":"Moved to Prod","hours":5.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2438","summary":"Incident Escalation Matrix Bugs: Vacant Unit Monitoring, Priority, and Escalation not working for SMS Alerts to Facility Manager","status":"QA-IN PROGRESS Feature branch","hours":5.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2490","summary":"Add \"Account Manager\" field with dropdown of users in Account Manager role","status":"Moved to Prod","hours":5.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2025","summary":"Investigate 42 Smart Unit Churn at My Garage Self Storage – Midlothian (Jan 13, 2026)","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2062","summary":"unit needs to be moved out","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2218","summary":"Errant Move out Text Messages","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2267","summary":"VV Incidents are not displaying on incident page.","status":"Moved to Prod","hours":4.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2291","summary":"False moveout happened in My Garage Orange facility SSM","status":"Moved to Prod","hours":4.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2301","summary":"Update Pre-Install Inventory (Mobile Friendly) Error Message","status":"Moved to Prod","hours":4.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2417","summary":"Investigate Unexpected Mass Move-Out and Move-In Activity at Secure Storage and RV.","status":"Moved to Prod","hours":4.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2537","summary":"Make these icons darker","status":"Moved to Prod","hours":4.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2561","summary":"Non Smart Unit received a Text","status":"Moved to Prod","hours":4.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2582","summary":"Alternate Contacts being added as Secondary Responders for Monument","status":"Moved to Prod","hours":4.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-1750","summary":"Sync unit type mismatch","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-1896","summary":"2FA Enabled on Wrong Facility: “4 Storage of Philadelphia”.","status":"Moved to Prod","hours":3.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2002","summary":"SSM - Lots of Failed to fetch feature config for organization warnings in production","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2051","summary":"Renter Sheet > Net Active Subscriber Roll for Storage Asset Management has incorrect 'Total Active Units' counts in multiple rows","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2079","summary":"West Coast Sound Storage of Lynnwood - Unit not syncing over","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2084","summary":"West Coast - Sound Storage of Lynnwood","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2104","summary":"Update SMS text sent to Tenant when their Smart Unit is disabled","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2128","summary":"Preinstall Scan Email - Update","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2265","summary":"SAM Tenant Ledger Report showing numerous replicates","status":"Moved to Prod","hours":3.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2274","summary":"Invoice report data is empty","status":"Moved to Prod","hours":3.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2355","summary":"Sitelink Notes Affected","status":"Moved to Prod","hours":3.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2387","summary":"Motion Detection Devices Not Triggering Alerts – Unit 7038, MyStorage Prescott Valley","status":"Moved to Prod","hours":3.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2390","summary":"Add Playbook (RevMax vs Choice) column to Monthly Invoicing Report","status":"Moved to Prod","hours":3.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2392","summary":"Add Smart Zones and Task Management UserProperties to UserPilot","status":"Moved to Prod","hours":3.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2522","summary":"View Task button does not open Task dialog","status":"Moved to Prod","hours":3.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2173","summary":"Memorial Drive Storage – Smart Units Dropped from 356 to 18 After Re-sync (No New Move-ins Syncing)","status":"Moved to Prod","hours":2.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-921","summary":"Sitelink sync non paying tenants issue","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-1751","summary":"Move in and Motion logs are misaligned","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-1984","summary":"OPEX disposition in BO","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2063","summary":"SAM Sync Parameters","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2090","summary":"Unit not moving into the dashboard","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2129","summary":"Slack Incident Alerts - Not working correctly","status":"Moved to Prod","hours":2.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2161","summary":"Create new billing types - OPEX Facility and  Active Subscription","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2241","summary":"Unable to Clear “Move Out Completed Without Device” Notifications (350+) – Attic Storage Liberty South","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2306","summary":"GraphiQL UI repeatedly prompts Basic Auth login on every query/mutation execution","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2322","summary":"Tenant got two random text messages today","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2323","summary":"Two units randomly moved in","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2349","summary":"Too many clicks to view +VisualVerify Task from VisualVerify Dashboard","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2370","summary":"Shipment Log - Need to add Facility 'Device Charge' amount to Shipment Log for Accounts Receivable (by mid-June)","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2432","summary":"Cubby Integration Bug (?): Tenants not being moved out from SD","status":"Moved to Prod","hours":2.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2470","summary":"Implemented Audit Logs for Unit-to-Zone Mapping","status":"Moved to Prod","hours":2.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2500","summary":"Fix Non payment message","status":"Moved to Prod","hours":2.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2563","summary":"Customer Dashboard - Help Resources - Insurance","status":"Moved to Prod","hours":2.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2226","summary":"Unexpected Unit Move-Outs – Volta Global Sites – Mar 22, 2026.","status":"Moved to Prod","hours":1.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2009","summary":"Sitelink - constraint error when attempting to insert struct: \"rentals_history_pkey\" (unique_constraint)","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2021","summary":"Generate Endpoints for EEN","status":"QA Done Staging","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2035","summary":"OLD tenants still getting motion messages","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2047","summary":"Sitelink: GenServer SiteLink.Service.FacilityPollingWorker_10 terminating with :whitespace_was_expected","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2099","summary":"Manual Re-Sync is not working for GA-GAI-01","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2121","summary":"Updated Tenant Ledger Report - SAM Request","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2139","summary":"EZ Werks - Old Code (Sitelink) For Units in Dashboard","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2140","summary":"Add Orgnaisation and Facility Name column in Looker Studio  Report (CS Request-Tenants Reports)","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2155","summary":"Title: ReconcileWorker crash due to invalid conflict_target in SiteLink pipeline","status":"Moved to Prod","hours":1.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2196","summary":"Storage Sense - Houston - Sync has not completed for almost a week (!!)","status":"Moved to Prod","hours":1.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2224","summary":"Why did the Bulk Message Approval get created for KS-OLA-01 on 3/19/2026??","status":"Moved to Prod","hours":1.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2252","summary":"Units randomly moved out (Southlake Storage)","status":"Moved to Prod","hours":1.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2295","summary":"Generate report of muted facilities in StorEdge and SSM (false move-out incident)","status":"Moved to Prod","hours":1.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2426","summary":"Update the device mounting procedures in the dashboard","status":"Moved to Prod","hours":1.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2440","summary":"Unable to Access Inspection Report When Resolving Incidents from Dashboard.","status":"Moved to Prod","hours":1.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2475","summary":"Hide \"no zone assigned\" warning banner on Smart Unit detail page (Facility Zone card)","status":"Moved to Prod","hours":1.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2523","summary":"Remove Tenant From Smart Unit","status":"Moved to Prod","hours":1.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2525","summary":"Marinship Unit Changes","status":"Moved to Prod","hours":1.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2527","summary":"Tenant received motion alert for non-existent \"Unit #100\" — mismatch with correct SD unit C060 (West Coast Self-Storage Ontario)","status":"Moved to Prod","hours":1.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2046","summary":"Backoffice: SSM integration Cannot query field \\\"notesInsert\\\" on type","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2159","summary":"My Garage I35 - Unit Not Syncing Over","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2169","summary":"Fix typo in aggregate_motion feature description","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2222","summary":"Get a list of Facilities that were synced with Storedge from the past 8 months.","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2268","summary":"Front End > Reports > [Org > Region > Facility] Subscriptions Report not working","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2312","summary":"My Storage Group Sitelink PW updated","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2336","summary":"Tenant Addendum Incorrectly Sent via SMS After Move-In and SMS Link is Broken.","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2464","summary":"The Zone column on the Smart Unit page and the Facility Zone card are being displayed for facilities where Smart Zones are not enabled.","status":"Moved to Prod","hours":0.5,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2509","summary":"Missing Units - AAAA Self Storage- CA","status":"Moved to Prod","hours":0.5,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2072","summary":"VV Motion Incidents labeled Person Detection Clips","status":"Moved to Prod","hours":0.33,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2479","summary":"Add new organization on siteLink.","status":"Moved to Prod","hours":0.33,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2501","summary":"Hide \"Manual Sync\" request-limit banner for SSM facilities (no API rate limits apply to SSM)","status":"Moved to Prod","hours":0.33,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2515","summary":"Fix Wording on Tile Dropdown","status":"Moved to Prod","hours":0.33,"quarter":"Q3(Jul-Sep)"}],"total_hours":896.82,"by_quarter":{"Q1(Jan-Mar)":{"count":46,"hours":276.0},"Q2(Apr-Jun)":{"count":54,"hours":407.83},"Q3(Jul-Sep)":{"count":35,"hours":212.99}}},"Richard":{"cards":[{"key":"SDKANBAN-2259","summary":"Bug : StorEdge – Incorrect Move-Outs Triggered by HTTP 4xx Error in 20-Minute Ledger Reconciler","status":"QA Done Feature Branch","hours":20.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2133","summary":"Richard - Feb 2026 Meetings  and Unplanned items","status":"In Progress","hours":16.08,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2135","summary":"Richard/Kamalini/Angela/Mark - WestCoast Attic Ledger report for last 6 months","status":"Moved to Prod","hours":15.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2348","summary":"VV+ SMS Link not sending out","status":"Moved to Prod","hours":14.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2053","summary":"Duplicates on EZ Werks Storage 2 Dashboard","status":"Moved to Prod","hours":14.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2089","summary":"EEN - Showing fallback video player instead of clips in incidents listing in tiles","status":"Moved to Prod","hours":13.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2042","summary":"Phase 1 Fix -Remove fall back implementations","status":"Moved to Prod","hours":12.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2086","summary":"Richard Meetings - Jan 2026","status":"Moved to Prod","hours":11.75,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2082","summary":"Analysis about PMS Sitelink AutoSet Recurring Charge and its 30 days discount possibilities","status":"Waiting for CS team","hours":9.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2162","summary":"Automated shipment log - autochange disposition and refresh subtypes at provisioning","status":"Moved to Prod","hours":7.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2087","summary":"API Review - Technical Documentation with priority and usage","status":"Moved to Prod","hours":5.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2163","summary":"Automated shipment log - autochange disposition","status":"Moved to Prod","hours":5.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2100","summary":"Create a one pager for sitelink api fields that we are storing from the API integrations","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-1539","summary":"sitelink - found an error in log","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2009","summary":"Sitelink - constraint error when attempting to insert struct: \"rentals_history_pkey\" (unique_constraint)","status":"Moved to Prod","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2013","summary":"Storedge - Tenant ledger report (verify and fix)","status":"In Progress","hours":3.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2044","summary":"Recurring Charge Reconciliation not working properly","status":"Moved to Prod","hours":2.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2004","summary":"StorEDGE - Lots of Could not find facility for ID warnings","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2029","summary":"EEN motion_started events are not being processed on MP - many motion_detected events in dead letter queue","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2035","summary":"OLD tenants still getting motion messages","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2047","summary":"Sitelink: GenServer SiteLink.Service.FacilityPollingWorker_10 terminating with :whitespace_was_expected","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2088","summary":"Sitelink API Analysis and posted to team about minimum required apis","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2118","summary":"Set up Slack Alerting Mechanism for Abnormal Subscription Drops","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2134","summary":"Issue with Staging Rabbit MQ - Storage","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2165","summary":"Storage Sense - Hammonton (NJ-HAT-01): 8 past tenants still active in SD","status":"Moved to Prod","hours":2.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2030","summary":"storEDGE: com.storedge.tenant.updated.v1 webhook events are not being aknowledged, moved to deadletter","status":"Dev Done","hours":1.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2097","summary":"No +VV Incidents since 2/1 at NY-CLY-01","status":"Moved to Prod","hours":1.08,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-1560","summary":"Richard's Meetings - July 2025","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-1984","summary":"OPEX disposition in BO","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2058","summary":"Add new organization on sitelink.","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2078","summary":"Sitelink Corp User Pw updated for Craddock","status":"Moved to Prod","hours":0.5,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2179","summary":"EEN Can Not Create Webhooks Subscription","status":"Moved to Prod","hours":0.5,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2260","summary":"Add new organization on sitelink.","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2293","summary":"Add new organization on sitelink.","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2406","summary":"Update the Sitelink passwords for Right Move Storage on the Dev side.","status":"Moved to Prod","hours":0.5,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2115","summary":"Add new organization on sitelink.","status":"Moved to Prod","hours":0.42,"quarter":"Q1(Jan-Mar)"}],"total_hours":180.83,"by_quarter":{"Q1(Jan-Mar)":{"count":29,"hours":142.33},"Q2(Apr-Jun)":{"count":6,"hours":38.0},"Q3(Jul-Sep)":{"count":1,"hours":0.5}}},"ganesh":{"cards":[{"key":"SDKANBAN-1983","summary":"MJ Production UATs for V2 Task Management & Pre-Install Mobile Friendly Workflow","status":"Moved to Prod","hours":16.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2127","summary":"Completing Incident Survey for SMU Incidents is not changing the Incident Resolution Task disposition to 'Done'","status":"Moved to Prod","hours":13.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-1995","summary":"Scanner feature showing error code","status":"Moved to Prod","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2050","summary":"Preinstall Scan Feature not allowing more then 10 units to be installed","status":"Moved to Prod","hours":8.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2141","summary":"TaskPro Bug - Incorrect # of Tasks being displayed in Three by Three","status":"Moved to Prod","hours":8.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2215","summary":"Demo Unit feature not working for three by three or MJ Self Storage","status":"Moved to Prod","hours":6.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2178","summary":"Install UserPilot Package in Staging","status":"Moved to Prod","hours":5.0,"quarter":"Q3(Jul-Sep)"},{"key":"SDKANBAN-2016","summary":"Add Reverted  front end test file - Smart Unit Pro","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2033","summary":"Minor Ui Bug for Android Devices with Mobile Friendly Pre-Install feature","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2039","summary":"We need to extend the secure token for temporary access from 15 Minutes to 45 Minutes.","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2227","summary":"Add Reverted  front end test file- Bulk Notifications","status":"Moved to Prod","hours":4.0,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2158","summary":"No Facilities in Production can resolve an Incident Survey since this morning (Urgent!)","status":"Moved to Prod","hours":1.58,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2195","summary":"TX-ATX-01: Incident Resolution bug with Device CM01851 / Unit # 0458","status":"Moved to Prod","hours":0.75,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2089","summary":"EEN - Showing fallback video player instead of clips in incidents listing in tiles","status":"Moved to Prod","hours":0.25,"quarter":"Q1(Jan-Mar)"},{"key":"SDKANBAN-2143","summary":"SD Dashboard – Pre-Install Inventory Search Bar Keeps Loading and Does Not Display Results.","status":"Moved to Prod","hours":0.25,"quarter":"Q1(Jan-Mar)"}],"total_hours":82.83,"by_quarter":{"Q1(Jan-Mar)":{"count":11,"hours":56.08},"Q2(Apr-Jun)":{"count":2,"hours":13.75},"Q3(Jul-Sep)":{"count":2,"hours":13.0}}},"Pavan Sandeep Natha":{"cards":[{"key":"SDKANBAN-2017","summary":"Slack deletion getting error","status":"Moved to Prod","hours":16.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2126","summary":"Sync this Unit - Not Triggering Facility Notifications in Sitelink PMS","status":"Moved to Prod","hours":16.0,"quarter":"Q2(Apr-Jun)"},{"key":"SDKANBAN-2223","summary":"Bulk Messaging Safeguard Updates to Ui","status":"Moved to Prod","hours":2.0,"quarter":"Q2(Apr-Jun)"}],"total_hours":34.0,"by_quarter":{"Q1(Jan-Mar)":{"count":0,"hours":0},"Q2(Apr-Jun)":{"count":3,"hours":34.0},"Q3(Jul-Sep)":{"count":0,"hours":0}}}}};
+
+// ---- theme-aware chart colors ----
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+const C = {
+  ink: () => cssVar('--ink'),
+  soft: () => cssVar('--ink-soft'),
+  line: () => cssVar('--line'),
+  steel: () => cssVar('--steel'),
+  gold: () => cssVar('--gold'),
+  good: () => cssVar('--good'),
+  bad: () => cssVar('--bad'),
+};
+Chart.defaults.font.family = "'Inter',system-ui,sans-serif";
+Chart.defaults.font.size = 12.5;
+
+function statusClass(s){
+  if(/Released|Done/i.test(s)) return 'st-done';
+  if(/Progress|Pending|QA Done/i.test(s)) return 'st-progress';
+  return 'st-todo';
+}
+
+// ---------- KPI row ----------
+(function(){
+  const devCount = Object.keys(DATA.dev_report).length;
+  const qaCount = Object.keys(DATA.qa_report).length;
+  const totalFeatures = new Set();
+  Object.values(DATA.dev_report).forEach(d=>d.epics.forEach(f=>totalFeatures.add(f.key)));
+  Object.values(DATA.qa_report).forEach(d=>d.epics.forEach(f=>totalFeatures.add(f.key)));
+  const totalHours = Object.values(DATA.quarter_time).reduce((a,b)=>a+b,0);
+  const kpis = [
+    [totalFeatures.size, 'roadmap features tracked'],
+    [devCount, 'developers with logged work'],
+    [qaCount, 'QA resources involved'],
+    [Math.round(totalHours).toLocaleString(), 'total hours logged YTD'],
+  ];
+  document.getElementById('kpiRow').innerHTML = kpis.map(([n,l])=>
+    `<div class="kpi"><div class="num">${n}</div><div class="lbl">${l}</div></div>`).join('');
+})();
+
+// ---------- Tabs ----------
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+btn.dataset.panel).classList.add('active');
+});
+
+// ---------- Developer + QA: filterable by quarter, grouped by epic/feature ----------
+let currentQuarter = 'all';
+let devChartInst = null, qaChartInst = null;
+const qShortLabel = q => q==='all' ? 'All quarters' : q.split('(')[0];
+
+function filteredEpics(epics){
+  return currentQuarter==='all' ? epics : epics.filter(e=>e.quarter===currentQuarter);
+}
+
+function typeClass(t){
+  if(t==='Epic') return 'st-progress';
+  if(t==='Bug') return 'st-todo';
+  return 'st-done';
+}
+
+function renderPersonList(container, report, prefix){
+  const raw = Object.entries(report).map(([name, v])=>{
+    const epics = filteredEpics(v.epics).slice().sort((a,b)=>b.hours-a.hours);
+    const hrs = epics.reduce((s,e)=>s+e.hours,0);
+    return [name, epics, hrs];
+  }).sort((a,b)=>b[2]-a[2]);
+
+  const list = document.getElementById(container);
+  list.innerHTML = raw.map(([name, epics, hrsTotal], idx)=>{
+    if(epics.length===0){
+      return `<details class="person" id="${prefix}-detail-${idx}">
+        <summary><span><span class="chev">▸</span> <span class="person-name">${name}</span></span>
+        <span class="person-meta">no hours logged</span></summary>
+        <div class="person-body"><p class="note">No worklog time from ${name} for ${qShortLabel(currentQuarter)}.</p></div></details>`;
+    }
+    const rows = epics.map(e=>
+      `<tr><td><a class="key" href="https://teamofdefenders.atlassian.net/browse/${e.key}" target="_blank" rel="noopener">${e.key}</a></td><td>${e.summary}</td><td><span class="status-pill ${typeClass(e.type)}">${e.type}</span></td><td class="num-cell">${e.hours}</td></tr>`
+    ).join('');
+    return `<details class="person" id="${prefix}-detail-${idx}">
+      <summary><span><span class="chev">▸</span> <span class="person-name">${name}</span></span>
+      <span class="person-meta">${epics.length} feature${epics.length===1?'':'s'} · ${Math.round(hrsTotal)} hrs</span></summary>
+      <div class="person-body">
+        <table><thead><tr><th>Card</th><th>Feature</th><th>Type</th><th class="num-cell">Hours</th></tr></thead>
+        <tbody>${rows}</tbody></table>
+      </div></details>`;
+  }).join('');
+  return raw;
+}
+
+function renderDev(){
+  const raw = Object.entries(DATA.dev_report).map(([name, v])=>{
+    const epics = filteredEpics(v.epics);
+    const hrs = epics.reduce((s,e)=>s+e.hours,0);
+    return [name, epics, hrs];
+  }).sort((a,b)=>b[2]-a[2]);
+
+  const labels = raw.map(r=>r[0]);
+  const hours = raw.map(r=>Math.round(r[2]));
+  const counts = raw.map(r=>r[1].length);
+
+  if(devChartInst) devChartInst.destroy();
+  devChartInst = new Chart(document.getElementById('devChart'), {
+    type:'bar',
+    data:{ labels, datasets:[{
+      label:'Hours logged ('+qShortLabel(currentQuarter)+')',
+      data:hours,
+      backgroundColor: C.steel(),
+      borderRadius:4,
+      maxBarThickness:46,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      onHover:(evt,elements)=>{ evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; },
+      onClick:(evt,elements)=>{
+        if(!elements.length) return;
+        focusPersonDetail('dev', elements[0].index);
+      },
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ afterLabel:(ctx)=> counts[ctx.dataIndex] + ' feature' + (counts[ctx.dataIndex]===1?'':'s') + ' · click bar for details' } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:C.soft()} },
+        y:{ grid:{color:C.line()}, ticks:{color:C.soft()}, title:{display:true,text:'Hours',color:C.soft()} }
+      }
+    }
+  });
+
+  renderPersonList('devList', DATA.dev_report, 'dev');
+}
+
+function focusPersonDetail(prefix, idx){
+  document.querySelectorAll(`#panel-${prefix==='dev'?'dev':'qa'} details.person`).forEach(d=>{
+    if(d.id !== `${prefix}-detail-${idx}`) d.removeAttribute('open');
+  });
+  const el = document.getElementById(`${prefix}-detail-${idx}`);
+  if(!el) return;
+  el.setAttribute('open','');
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+  el.style.outline = `2px solid ${C.steel()}`;
+  el.style.outlineOffset = '2px';
+  setTimeout(()=>{ el.style.outline=''; el.style.outlineOffset=''; }, 1400);
+}
+
+document.getElementById('qfilter').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('#qfilter button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentQuarter = btn.dataset.q;
+  renderDev();
+});
+
+renderDev();
+
+// ---------- Quarter chart + table ----------
+(function(){
+  const qs = DATA.quarter_order;
+  const devHours = qs.map(q=>Math.round(DATA.quarter_dev_hours[q]));
+  const qaHours = qs.map(q=>Math.round(DATA.quarter_qa_hours[q]));
+  const shortQ = qs.map(q=>q.split('(')[0]);
+
+  new Chart(document.getElementById('quarterChart'), {
+    type:'bar',
+    data:{ labels: shortQ, datasets:[
+      { label:'Dev hours', data: devHours, backgroundColor: C.steel(), borderRadius:5, maxBarThickness:70 },
+      { label:'QA hours', data: qaHours, backgroundColor: C.gold(), borderRadius:5, maxBarThickness:70 },
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{position:'top', labels:{color:C.ink(), usePointStyle:true, boxWidth:8}} },
+      scales:{
+        x:{ stacked:true, grid:{display:false}, ticks:{color:C.soft(), font:{size:14}} },
+        y:{ stacked:true, grid:{color:C.line()}, ticks:{color:C.soft()}, title:{display:true,text:'Hours',color:C.soft()} }
+      }
+    }
+  });
+
+  document.getElementById('quarterTable').innerHTML = qs.map(q=>{
+    const dh = DATA.quarter_dev_hours[q], qh = DATA.quarter_qa_hours[q];
+    return `<tr><td>${q}</td><td class="num-cell">${dh}</td><td class="num-cell">${qh}</td><td class="num-cell">${Math.round((dh+qh)*10)/10}</td></tr>`;
+  }).join('');
+})();
+
+// ---------- Kanban cards (all developers) ----------
+(function(){
+  const kanban = DATA.kanban;
+  const qs = DATA.quarter_order;
+  const shortQ = qs.map(q=>q.split('(')[0]);
+  const people = Object.keys(kanban).sort((a,b)=>kanban[b].total_hours - kanban[a].total_hours);
+  let current = people[0];
+
+  // summary chart: total hours per person
+  new Chart(document.getElementById('kanbanSummaryChart'), {
+    type:'bar',
+    data:{ labels: people, datasets:[{
+      label:'Total SDKANBAN hours (2026)',
+      data: people.map(p=>Math.round(kanban[p].total_hours)),
+      backgroundColor: C.gold(),
+      borderRadius:4,
+      maxBarThickness:60,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ afterLabel:(ctx)=> kanban[people[ctx.dataIndex]].cards.length + ' cards' } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:C.soft()} },
+        y:{ grid:{color:C.line()}, ticks:{color:C.soft()}, title:{display:true,text:'Hours',color:C.soft()} }
+      }
+    }
+  });
+
+  document.getElementById('kanbanPersonTabs').innerHTML = people.map(p=>
+    `<button class="qbtn" data-person="${p}" style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:13px;">${p}</button>`
+  ).join('');
+
+  let chartInst = null;
+  function renderPerson(person){
+    current = person;
+    document.querySelectorAll('#kanbanPersonTabs button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.person===person);
+      b.style.background = b.dataset.person===person ? C.steel() : 'var(--card)';
+      b.style.color = b.dataset.person===person ? '#fff' : 'inherit';
+    });
+
+    const hk = kanban[person];
+    const hours = qs.map(q=>hk.by_quarter[q].hours);
+    const counts = qs.map(q=>hk.by_quarter[q].count);
+
+    if(chartInst) chartInst.destroy();
+    chartInst = new Chart(document.getElementById('kanbanChart'), {
+      type:'bar',
+      data:{ labels: shortQ, datasets:[{
+        label: person + ' — hours logged on SDKANBAN cards',
+        data: hours,
+        backgroundColor: C.steel(),
+        borderRadius:5,
+        maxBarThickness:80,
+      }]},
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false},
+          tooltip:{ callbacks:{ afterLabel:(ctx)=> counts[ctx.dataIndex] + ' cards' } } },
+        scales:{
+          x:{ grid:{display:false}, ticks:{color:C.soft(), font:{size:14}} },
+          y:{ grid:{color:C.line()}, ticks:{color:C.soft()}, title:{display:true,text:'Hours',color:C.soft()} }
+        }
+      }
+    });
+
+    document.getElementById('kanbanQuarterTable').innerHTML = qs.map(q=>{
+      const b = hk.by_quarter[q];
+      return `<tr><td>${q}</td><td class="num-cell">${b.count}</td><td class="num-cell">${b.hours}</td></tr>`;
+    }).join('') + `<tr><td><strong>Total (2026)</strong></td><td class="num-cell"><strong>${hk.cards.length}</strong></td><td class="num-cell"><strong>${hk.total_hours}</strong></td></tr>`;
+
+    document.getElementById('kanbanCardTable').innerHTML = hk.cards.map(c=>
+      `<tr><td><a class="key" href="https://teamofdefenders.atlassian.net/browse/${c.key}" target="_blank" rel="noopener">${c.key}</a></td><td>${c.summary}</td><td><span class="status-pill ${statusClass(c.status)}">${c.status}</span></td><td>${c.quarter ? c.quarter.split('(')[0] : '—'}</td><td class="num-cell">${c.hours}</td></tr>`
+    ).join('');
+  }
+
+  document.getElementById('kanbanPersonTabs').addEventListener('click', e=>{
+    const btn = e.target.closest('button'); if(!btn) return;
+    renderPerson(btn.dataset.person);
+  });
+
+  renderPerson(current);
+})();
+
+// ---------- Associated PM report ----------
+(function(){
+  const pmReport = DATA.pm_report;
+  const qs = DATA.quarter_order;
+  const pmNames = Object.keys(pmReport).sort((a,b)=>pmReport[b].total_hours - pmReport[a].total_hours);
+
+  new Chart(document.getElementById('pmChart'), {
+    type:'bar',
+    data:{ labels: pmNames, datasets:[{
+      label:'Hours logged (all quarters)',
+      data: pmNames.map(n=>Math.round(pmReport[n].total_hours)),
+      backgroundColor: pmNames.map(n=> n==='Unassigned' ? C.line() : C.steel()),
+      borderRadius:4,
+      maxBarThickness:60,
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ afterLabel:(ctx)=> pmReport[pmNames[ctx.dataIndex]].features.length + ' features' } } },
+      scales:{
+        x:{ grid:{display:false}, ticks:{color:C.soft()} },
+        y:{ grid:{color:C.line()}, ticks:{color:C.soft()}, title:{display:true,text:'Hours',color:C.soft()} }
+      }
+    }
+  });
+
+  document.getElementById('pmList').innerHTML = pmNames.map(name=>{
+    const v = pmReport[name];
+
+    const fmtFacilityCount = (f) => {
+      const fc = f.facility_count;
+      if (fc === null) return '<span style="color:var(--ink-soft);">N/A</span>';
+      if (fc === 'unknown' || fc === undefined) return '<span style="color:var(--ink-soft);">—</span>';
+      return `<a href="javascript:void(0)" onclick="openFacilityModal('${f.key}')" style="color:var(--steel);text-decoration:underline;cursor:pointer;font-weight:600;">${fc}</a>`;
+    };
+
+    const valueDotColor = { Low:'#D64545', Medium:'#E0A82E', High:'#3FA34D', Extensive:'#E8720C' };
+    const fmtValue = (f) => {
+      if (f.value_label === undefined) return '<span style="color:var(--ink-soft);">—</span>';
+      const c = valueDotColor[f.value_label] || '#999';
+      return `<span style="display:inline-flex;align-items:center;gap:6px;justify-content:flex-end;"><span style="width:8px;height:8px;border-radius:50%;background:${c};display:inline-block;"></span>${f.value_label} <span style="color:var(--ink-soft);font-size:11.5px;">(${f.value_pct}%)</span></span>`;
+    };
+
+    const fmtRelease = (f) => f.release_date ? `${f.release_date} <span style="color:var(--ink-soft);font-size:11px;">(${f.days_live}d)</span>` : '<span style="color:var(--ink-soft);">—</span>';
+    const fmtQuarter = (f) => f.quarter ? f.quarter.split('(')[0] : '<span style="color:var(--ink-soft);">—</span>';
+
+    // sort by Feature Value % descending; features without a value score (no facility data) sort to the bottom, by hours desc
+    const sorted = [...v.features].sort((a,b)=>{
+      const av = typeof a.value_pct === 'number' ? a.value_pct : -1;
+      const bv = typeof b.value_pct === 'number' ? b.value_pct : -1;
+      if (bv !== av) return bv - av;
+      return b.hours - a.hours;
+    });
+
+    const rows = sorted.map(f=>
+      `<tr><td><a class="key" href="https://teamofdefenders.atlassian.net/browse/${f.key}" target="_blank" rel="noopener">${f.key}</a></td><td>${f.summary}</td><td><span class="status-pill ${typeClass(f.type)}">${f.type}</span></td><td>${fmtQuarter(f)}</td><td class="num-cell">${f.hours}</td><td class="num-cell">${fmtFacilityCount(f)}</td><td>${fmtRelease(f)}</td><td class="num-cell">${fmtValue(f)}</td></tr>`
+    ).join('');
+    const body = `<table><thead><tr><th>Card</th><th>Feature</th><th>Type</th><th>Quarter</th><th class="num-cell">Hours</th><th class="num-cell"># of Facilities/Orgs</th><th>Release Date</th><th class="num-cell">Feature Value</th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+
+    return `<details class="person">
+      <summary><span><span class="chev">▸</span> <span class="person-name">${name}</span></span>
+      <span class="person-meta">${v.features.length} features · ${Math.round(v.total_hours)} hrs</span></summary>
+      <div class="person-body">${body}</div></details>`;
+  }).join('');
+})();
+
+// ---------- Feature Value Breakdown donut ----------
+(function(){
+  const rows = [];
+  Object.values(DATA.pm_report).forEach(v=>{
+    v.features.forEach(f=>{ if (f.value_label && f.value_label !== 'Low') rows.push(f); });
+  });
+  rows.sort((a,b)=>b.value_pct-a.value_pct);
+  const shareTotal = rows.reduce((s,f)=>s+f.value_pct,0);
+  const palette = ['#2E5A82','#3FA34D','#E0A82E','#E8720C','#8E5FB5','#C0455F'];
+
+  new Chart(document.getElementById('valueChart'), {
+    type:'doughnut',
+    data:{
+      labels: rows.map(f=>f.summary.length>32 ? f.summary.slice(0,30)+'…' : f.summary),
+      datasets:[{
+        data: rows.map(f=>shareTotal ? Math.round(1000*f.value_pct/shareTotal)/10 : 0),
+        backgroundColor: rows.map((_,i)=>palette[i%palette.length]),
+        borderWidth:2,
+        borderColor: cssVar('--bg'),
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'right', labels:{color:C.ink(), boxWidth:10, font:{size:11.5}} },
+        tooltip:{ callbacks:{
+          label:(ctx)=> `${ctx.label}: ${ctx.parsed}%`,
+          afterLabel:(ctx)=>{ const f=rows[ctx.dataIndex]; return `${f.facility_count} facilities \u00f7 ${f.hours} hrs \u00b7 ${f.key} \u00b7 ${f.value_label}`; }
+        } }
+      },
+      cutout:'55%'
+    }
+  });
+})();
+</script>
+
+<div id="facilityModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;" onclick="if(event.target===this) closeFacilityModal()">
+  <div style="background:var(--card);border-radius:12px;max-width:520px;width:90%;max-height:75vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div id="facilityModalTitle" style="font-weight:700;font-size:15px;"></div>
+        <div id="facilityModalSubtitle" style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;"></div>
+      </div>
+      <button onclick="closeFacilityModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);line-height:1;padding:4px 8px;">&times;</button>
+    </div>
+    <div id="facilityModalList" style="overflow-y:auto;padding:10px 22px 20px;font-size:13.5px;"></div>
+  </div>
+</div>
+<script>
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function openFacilityModal(featureKey){
+  let feature = null;
+  for (const pm of Object.values(DATA.pm_report)){
+    feature = pm.features.find(f=>f.key===featureKey);
+    if (feature) break;
+  }
+  if (!feature) return;
+  const names = feature.facility_list || [];
+  document.getElementById('facilityModalTitle').textContent = feature.summary;
+  document.getElementById('facilityModalSubtitle').textContent = names.length + ' facilit' + (names.length===1?'y':'ies') + '/organizations \u2014 ' + featureKey;
+  document.getElementById('facilityModalList').innerHTML = names.length
+    ? '<ol style="margin:0;padding-left:20px;">' + names.map(n=>`<li style="padding:3px 0;">${escapeHtml(n)}</li>`).join('') + '</ol>'
+    : '<p style="color:var(--ink-soft);">No facilities found.</p>';
+  document.getElementById('facilityModalOverlay').style.display = 'flex';
+}
+function closeFacilityModal(){
+  document.getElementById('facilityModalOverlay').style.display = 'none';
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeFacilityModal(); });
+</script>
+</body>
+</html>
